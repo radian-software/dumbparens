@@ -21,7 +21,29 @@
 ;; variable declarations in each section, run M-x occur with the
 ;; following query: ^;;;;* \|^(
 
+(defun dumbparens--post-self-insert-hook ()
+  "Insert paired delimiter if necessary."
+  (let ((syntax (syntax-after (1- (point)))))
+    ;; Check if the user just inserted an open-parenthesis character.
+    (when (= (syntax-class syntax) 4)
+      (let ((state (syntax-ppss)))
+        ;; Make sure we're not in a string or comment.
+        (unless (nth 8 state)
+          (save-excursion
+            ;; Insert the corresponding close-parenthesis.
+            (insert (cdr syntax))))))))
 
+(define-minor-mode dumbparens-mode
+  "Minor mode for dealing with paired delimiters in a simple way."
+  nil nil nil
+  (if dumbparens-mode
+      (add-hook 'post-self-insert-hook #'dumbparens--post-self-insert-hook
+                nil 'local)
+    (remove-hook 'post-self-insert-hook #'dumbparens--post-self-insert-hook
+                 nil 'local)))
+
+(define-globalized-minor-mode dumbparens-global-mode
+  dumbparens-mode dumbparens-mode)
 
 ;;;; Closing remarks
 
