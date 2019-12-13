@@ -22,16 +22,24 @@
 ;; following query: ^;;;;* \|^(
 
 (defun dumbparens--post-self-insert-hook ()
-  "Insert paired delimiter if necessary."
+  "Insert or remove paired delimiters as necessary."
+  ;; https://www.gnu.org/software/emacs/manual/html_node/elisp/Syntax-Table-Internals.html
   (let ((syntax (syntax-after (1- (point)))))
-    ;; Check if the user just inserted an open-parenthesis character.
-    (when (= (syntax-class syntax) 4)
-      (let ((state (syntax-ppss)))
-        ;; Make sure we're not in a string or comment.
-        (unless (nth 8 state)
-          (save-excursion
-            ;; Insert the corresponding close-parenthesis.
-            (insert (cdr syntax))))))))
+    (cond
+     (;; Check if the user just inserted an open-parenthesis character.
+      (when (= (syntax-class syntax) 4)
+        (let ((state (syntax-ppss)))
+          ;; Make sure we're not in a string or comment.
+          (unless (nth 8 state)
+            (save-excursion
+              ;; Insert the corresponding close-parenthesis.
+              (insert (cdr syntax)))))))
+     (;; Check if the user just inserted a close-parenthesis
+      ;; character, but there's already one right after, so we should
+      ;; type over it instead.
+      (when (and (= (syntax-class syntax) 5)
+                 (eq (char-before) (char-after)))
+        (delete-char 1))))))
 
 (define-minor-mode dumbparens-mode
   "Minor mode for dealing with paired delimiters in a simple way."
