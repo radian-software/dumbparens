@@ -23,23 +23,26 @@
 
 (defun dumbparens--post-self-insert-hook ()
   "Insert or remove paired delimiters as necessary."
+  ;; https://www.gnu.org/software/emacs/manual/html_node/elisp/Syntax-Class-Table.html
   ;; https://www.gnu.org/software/emacs/manual/html_node/elisp/Syntax-Table-Internals.html
-  (let ((syntax (syntax-after (1- (point)))))
-    (cond
-     (;; Check if the user just inserted an open-parenthesis character.
-      (when (= (syntax-class syntax) 4)
-        (let ((state (syntax-ppss)))
-          ;; Make sure we're not in a string or comment.
-          (unless (nth 8 state)
-            (save-excursion
-              ;; Insert the corresponding close-parenthesis.
-              (insert (cdr syntax)))))))
-     (;; Check if the user just inserted a close-parenthesis
-      ;; character, but there's already one right after, so we should
-      ;; type over it instead.
-      (when (and (= (syntax-class syntax) 5)
-                 (eq (char-before) (char-after)))
-        (delete-char 1))))))
+  (let ((syntax (syntax-after (1- (point))))
+        (state (save-excursion
+                 (syntax-ppss (1- (point))))))
+    ;; Make sure we're not in a string or comment.
+    (unless (nth 8 state)
+      (cond
+       ;; Check if the user just inserted a close-parenthesis character,
+       ;; but there's already one right after, so we should type over it
+       ;; instead.
+       ((and (memq (syntax-class syntax) '(5 7 8))
+             (eq (char-before) (char-after)))
+        (delete-char 1))
+       ;; Check if the user just inserted an open-parenthesis character,
+       ;; so we should insert a close-parenthesis character to match.
+       ((memq (syntax-class syntax) '(4 7 8))
+        (save-excursion
+          ;; Insert the corresponding close-parenthesis.
+          (insert (or (cdr syntax) (char-before)))))))))
 
 (define-minor-mode dumbparens-mode
   "Minor mode for dealing with paired delimiters in a simple way."
