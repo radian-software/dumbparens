@@ -48,7 +48,7 @@
       (add-hook 'post-self-insert-hook #'dumbparens--post-self-insert-hook
                 nil 'local)
     (remove-hook 'post-self-insert-hook #'dumbparens--post-self-insert-hook
-                 nil 'local)))
+                 'local)))
 
 (define-globalized-minor-mode dumbparens-global-mode
   dumbparens-mode dumbparens-mode)
