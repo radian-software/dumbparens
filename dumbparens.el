@@ -21,39 +21,8 @@
 ;; variable declarations in each section, run M-x occur with the
 ;; following query: ^;;;;* \|^(
 
-(defun dumbparens--post-self-insert-hook ()
-  "Insert or remove paired delimiters as necessary."
-  ;; https://www.gnu.org/software/emacs/manual/html_node/elisp/Syntax-Class-Table.html
-  ;; https://www.gnu.org/software/emacs/manual/html_node/elisp/Syntax-Table-Internals.html
-  (let ((syntax (syntax-after (1- (point))))
-        (state (save-excursion
-                 (syntax-ppss (point)))))
-    (cond
-     ;; Check if the user just inserted a close-parenthesis character,
-     ;; but there's already one right after, so we should type over it
-     ;; instead.
-     ((and (memq (syntax-class syntax) '(5 7 8))
-           (eq (char-before) (char-after))
-           ;; Make sure we're not in a string or comment.
-           (null (nth 8 state)))
-      (delete-char 1))
-     ;; Check if the user just inserted an open-parenthesis character,
-     ;; so we should insert a close-parenthesis character to match.
-     ((or (memq (syntax-class syntax) '(4 8))
-          (and (= (syntax-class syntax) 3)
-               (nth 8 state)))
-      (save-excursion
-        ;; Insert the corresponding close-parenthesis.
-        (insert (or (cdr syntax) (char-before))))))))
-
 (define-minor-mode dumbparens-mode
-  "Minor mode for dealing with paired delimiters in a simple way."
-  nil nil nil
-  (if dumbparens-mode
-      (add-hook 'post-self-insert-hook #'dumbparens--post-self-insert-hook
-                nil 'local)
-    (remove-hook 'post-self-insert-hook #'dumbparens--post-self-insert-hook
-                 'local)))
+  "Minor mode for dealing with paired delimiters in a simple way.")
 
 (define-globalized-minor-mode dumbparens-global-mode
   dumbparens-mode dumbparens-mode)
