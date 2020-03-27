@@ -125,6 +125,13 @@
   :keys "\""
   :after "\"\"|")
 
+(dumbparens-test delete-pair
+  "Backspacing inside an empty pair should delete it"
+  :mode elisp
+  :before "(|)"
+  :keys "DEL"
+  :after "|")
+
 (provide 'dumbparens-test)
 
 ;; Local Variables:
