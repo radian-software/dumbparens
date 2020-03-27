@@ -28,27 +28,38 @@
   (atomic-change-group
     (let ((arg (prefix-numeric-value current-prefix-arg))
           (inserted (char-before)))
-      (delete-char (- arg))
-      (let ((state (save-excursion (syntax-ppss))))
-        (unless (nth 8 state)
+      (when (> arg 0)
+        (delete-char (- arg))
+        (let ((state (save-excursion (syntax-ppss))))
           (cond
-           ((when (nth 1 state)
-              (when (memq (car (syntax-after (nth 1 state))) '(4 8))
-                (when-let ((closer (cdr (syntax-after (nth 1 state)))))
-                  (when (= inserted closer)
-                    (prog1 t
-                      (let ((orig-point (point)))
-                        (cl-block nil
-                          (condition-case _
-                              (up-list arg)
-                            (error
-                             (goto-char orig-point)
-                             (insert (make-string arg inserted))))))))))))
-           ((memq (car (aref (syntax-table) inserted)) '(4 8))
+           ;; If typing close paren, then skip out of current list
+           ;; instead.
+           ((and (null (nth 8 state))
+                 (nth 1 state)
+                 (memq (car (syntax-after (nth 1 state))) '(4 8))
+                 (= inserted (cdr (syntax-after (nth 1 state)))))
+            (let ((orig-point (point)))
+              (cl-block nil
+                (condition-case _
+                    (up-list arg)
+                  (error
+                   (goto-char orig-point)
+                   (insert (make-string arg inserted)))))))
+           ;; If typing open paren, then insert close paren too.
+           ((and (null (nth 8 state))
+                 (memq (car (aref (syntax-table) inserted)) '(4 8)))
             (insert (make-string arg inserted))
             (save-excursion
               (insert
                (make-string arg (cdr (aref (syntax-table) inserted))))))
+           ;; If typing quote, then insert matched pair.
+           ((and (null (nth 8 state))
+                 (memq (car (aref (syntax-table) inserted)) '(7 15)))
+            (insert (make-string arg inserted))
+            (save-excursion
+              (insert
+               (make-string arg inserted))))
+           ;; Otherwise, don't do anything special.
            (t
             (insert (make-string arg inserted)))))))))
 
