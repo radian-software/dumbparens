@@ -24,7 +24,7 @@
   `(setf (alist-get ',name dumbparens-tests) '(:desc ,desc ,@kws)))
 
 (defun dumbparens-run-test (name)
-  "Run a single unit test."
+  "Run a single unit test. Return non-nil if passed, nil if failed."
   (interactive
    (list
     (intern
@@ -32,7 +32,7 @@
       "Run test: "
       (mapcar #'symbol-name (map-keys dumbparens-tests))))))
   (let* ((test (alist-get name dumbparens-tests))
-         (bufname (format "*dumbparens test %S*" name))
+         (bufname (format " *dumbparens test %S*" name))
          (failed nil))
     (when (get-buffer bufname)
       (kill-buffer bufname))
@@ -67,7 +67,9 @@
           (setq failed "text does not match expected")
           (cl-return))))
     (if (not failed)
-        (message "Test %S passed" name)
+        (progn
+          (message "Test %S passed" name)
+          t)
       (message "Test %S failed: %s" name failed)
       (with-current-buffer bufname
         (let ((actual (buffer-string)))
@@ -83,7 +85,17 @@
            actual
            "\n"))
         (dumbparens-test-mode +1))
-      (pop-to-buffer bufname))))
+      (pop-to-buffer bufname)
+      nil)))
+
+(defun dumbparens-run-all-tests ()
+  "Run all the unit tests until a failure is encountered."
+  (interactive)
+  (cl-block nil
+    (dolist (name (nreverse (map-keys dumbparens-tests)))
+      (unless (dumbparens-run-test name)
+        (cl-return)))
+    (message "All tests passed")))
 
 (dumbparens-test open-pair
   "Typing an open paren should insert a close paren"
