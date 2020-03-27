@@ -21,6 +21,7 @@
 ;; variable declarations in each section, run M-x occur with the
 ;; following query: ^;;;;* \|^(
 
+;;;###autoload
 (defun dumbparens--post-self-insert-hook ()
   "Insert or remove paired delimiters as necessary."
   ;; https://www.gnu.org/software/emacs/manual/html_node/elisp/Syntax-Class-Table.html
@@ -80,17 +81,21 @@
            (t
             (insert (make-string arg inserted)))))))))
 
-(define-minor-mode dumbparens-mode
-  "Minor mode for dealing with paired delimiters in a simple way."
-  nil nil nil
-  (if dumbparens-mode
-      (add-hook 'post-self-insert-hook #'dumbparens--post-self-insert-hook
-                nil 'local)
-    (remove-hook 'post-self-insert-hook #'dumbparens--post-self-insert-hook
-                 'local)))
+;;;###autoload
+(progn
+  (define-minor-mode dumbparens-mode
+    "Minor mode for dealing with paired delimiters in a simple way."
+    nil nil nil
+    (if dumbparens-mode
+        (add-hook 'post-self-insert-hook #'dumbparens--post-self-insert-hook
+                  nil 'local)
+      (remove-hook 'post-self-insert-hook #'dumbparens--post-self-insert-hook
+                   'local))))
 
-(define-globalized-minor-mode dumbparens-global-mode
-  dumbparens-mode dumbparens-mode)
+;;;###autoload
+(progn
+  (define-globalized-minor-mode dumbparens-global-mode
+    dumbparens-mode dumbparens-mode))
 
 ;;;; Closing remarks
 
