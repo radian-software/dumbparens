@@ -52,7 +52,24 @@
             (save-excursion
               (insert
                (make-string arg (cdr (aref (syntax-table) inserted))))))
-           ;; If typing quote, then insert matched pair.
+           ;; If typing quote at end of string, then type over the end
+           ;; of the string instead.
+           ((and (null (nth 4 state))
+                 (nth 3 state)
+                 (if (eq (nth 3 state) t)
+                     (and (eq (char-after) inserted)
+                          (= (car (syntax-after)) 15))
+                   (and (eq (char-after) inserted)
+                        (eq inserted (nth 3 state)))))
+            (forward-char)
+            (cl-decf arg)
+            (while (> arg 0)
+              (insert (make-string 2 inserted))
+              (cl-decf arg 2)
+              (when (< arg 0)
+                (backward-char))))
+           ;; If typing quote outside string, then insert matched
+           ;; pair.
            ((and (null (nth 8 state))
                  (memq (car (aref (syntax-table) inserted)) '(7 15)))
             (insert (make-string arg inserted))
