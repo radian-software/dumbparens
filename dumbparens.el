@@ -45,7 +45,7 @@ For use on `post-self-insert-hook'."
           (inserted (char-before)))
       (delete-char (- arg))
       (dotimes (_ arg)
-        (let ((state (save-excursion (syntax-ppss))))
+        (let ((state (syntax-ppss)))
           (cond
            ;; Type over a closing paren.
            ((and (null (nth 8 state))
@@ -96,7 +96,7 @@ advice."
                       (end (point)))
                   (cl-block nil
                     (dotimes (_ (abs n))
-                      (let ((state (save-excursion (syntax-ppss))))
+                      (let ((state (syntax-ppss)))
                         (unless (and (null (nth 5 state))
                                      (pcase (car (syntax-after lhs-point))
                                        (`4 (and (null (nth 8 state))
