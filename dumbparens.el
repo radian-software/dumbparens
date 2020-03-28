@@ -21,6 +21,20 @@
 ;; variable declarations in each section, run M-x occur with the
 ;; following query: ^;;;;* \|^(
 
+(defcustom dumbparens-mode-bindings
+  '(([remap delete-char] . delete-forward-char))
+  "Keybindings enabled in `dumbparens-mode'. This is not a keymap.
+Rather it is an alist that is converted into a keymap just before
+`dumbparens-mode' is (re-)enabled. The keys are strings or raw
+key events and the values are command symbols."
+  :type '(alist
+          :key-type sexp
+          :value-type function)
+  :set (lambda (var val)
+         (set var val)
+         (when (bound-and-true-p dumbparens-mode)
+           (dumbparens-mode +1))))
+
 (defun dumbparens--post-self-insert-command ()
   "Insert or remove paired delimiters as necessary.
 For use on `post-self-insert-hook'."
@@ -111,10 +125,24 @@ advice."
                   (delete-region start end)))))
     (apply func args)))
 
+(defvar dumbparens-mode--keymap (make-sparse-keymap)
+  "Keymap for `dumbparens-mode'. Populated when mode is enabled.
+See `dumbparens-mode-bindings'.")
+
 ;;;###autoload
 (define-minor-mode dumbparens-mode
   "Minor mode for dealing with paired delimiters in a simple way."
-  nil nil nil
+  :keymap dumbparens-mode--keymap
+  (when dumbparens-mode
+    ;; Hack to clear out keymap. Presumably there's a `clear-keymap'
+    ;; function lying around somewhere...?
+    (setcdr dumbparens-mode--keymap nil)
+    (map-apply
+     (lambda (key cmd)
+       (when (stringp key)
+         (setq key (kbd key)))
+       (define-key dumbparens-mode--keymap key cmd))
+     dumbparens-mode-bindings))
   (if dumbparens-mode
       (progn
         (add-hook 'post-self-insert-hook #'dumbparens--post-self-insert-command
@@ -139,6 +167,7 @@ advice."
 ;; Local Variables:
 ;; indent-tabs-mode: nil
 ;; outline-regexp: ";;;;* "
+;; sentence-end-double-space: nil
 ;; End:
 
 ;;; dumbparens.el ends here

@@ -146,6 +146,27 @@
   :keys "\""
   :after "\"\\\"|\"")
 
+(dumbparens-test open-pair-with-prefix-arg
+  "You can open multiple pairs at once with a prefix argument"
+  :mode elisp
+  :before "|"
+  :keys "C-u 3 ("
+  :after "(((|)))")
+
+(dumbparens-test type-over-close-with-prefix-arg
+  "You can type over multiple close parens at once with a prefix argument"
+  :mode elisp
+  :before "(((|)))"
+  :keys "C-u 2 )"
+  :after "((())|)")
+
+(dumbparens-test delete-pair-forward
+  "Typing C-d inside an empty pair should delete it"
+  :mode elisp
+  :before "(|)"
+  :keys "C-d"
+  :after "|")
+
 (provide 'dumbparens-test)
 
 ;; Local Variables:
