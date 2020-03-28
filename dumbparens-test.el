@@ -132,6 +132,20 @@
   :keys "DEL"
   :after "|")
 
+(dumbparens-test delete-string
+  "Backspacing inside an empty string should delete it"
+  :mode elisp
+  :before "\"|\""
+  :keys "DEL"
+  :after "|")
+
+(dumbparens-test escape-cancels-type-over-close-quote
+  "You won't type over a close quote right after a backslash"
+  :mode elisp
+  :before "\"\\|\""
+  :keys "\""
+  :after "\"\\\"|\"")
+
 (provide 'dumbparens-test)
 
 ;; Local Variables:

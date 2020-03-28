@@ -21,8 +21,9 @@
 ;; variable declarations in each section, run M-x occur with the
 ;; following query: ^;;;;* \|^(
 
-(defun dumbparens--post-self-insert-hook ()
-  "Insert or remove paired delimiters as necessary."
+(defun dumbparens--post-self-insert-command ()
+  "Insert or remove paired delimiters as necessary.
+For use on `post-self-insert-hook'."
   ;; https://www.gnu.org/software/emacs/manual/html_node/elisp/Syntax-Class-Table.html
   ;; https://www.gnu.org/software/emacs/manual/html_node/elisp/Syntax-Table-Internals.html
   (atomic-change-group
@@ -47,6 +48,7 @@
               (insert (cdr (aref (syntax-table) inserted)))))
            ;; Type over a closing quote.
            ((and (null (nth 4 state))
+                 (null (nth 5 state))
                  (nth 3 state)
                  (if (eq (nth 3 state) t)
                      (and (eq (char-after) inserted)
@@ -64,15 +66,67 @@
            (t
             (insert inserted))))))))
 
+(defun dumbparens--handle-delete-char (func &rest args)
+  "Delete paired delimiters as necessary.
+For use as `:around' advice on `delete-forward-char' and
+`delete-backward-char'. FUNC and ARGS are as in any `:around'
+advice."
+  (cl-letf* ((delete-char (symbol-function #'delete-char))
+             ((symbol-function #'delete-char)
+              (lambda (n &optional killflag)
+                (let ((num-matched 0)
+                      (lhs-point (1- (point)))
+                      (rhs-point (point))
+                      (start (point))
+                      (end (point)))
+                  (cl-block nil
+                    (dotimes (_ (abs n))
+                      (let ((state (save-excursion (syntax-ppss))))
+                        (unless (and (null (nth 5 state))
+                                     (pcase (car (syntax-after lhs-point))
+                                       (`4 (and (null (nth 8 state))
+                                                (eq (char-after rhs-point)
+                                                    (cdr (syntax-after lhs-point)))))
+                                       (`7 (and (nth 3 state)
+                                                (eq (char-after rhs-point)
+                                                    (char-after lhs-point))))
+                                       (`8 (and (null (nth 8 state))
+                                                (eq (char-after rhs-point)
+                                                    (char-after lhs-point))))
+                                       (`15 (and (nth 3 state)
+                                                 (eq 15 (car (syntax-after rhs-point)))))))
+                          (cl-return))
+                        (cl-incf num-matched)
+                        (cl-decf lhs-point)
+                        (cl-incf rhs-point))))
+                  (cond
+                   ((> n 0)
+                    (cl-incf end n)
+                    (cl-decf start num-matched))
+                   ((< n 0)
+                    (cl-decf start (- n))
+                    (cl-incf end num-matched)))
+                  (when killflag
+                    (kill-new (buffer-substring start end)))
+                  (delete-region start end)))))
+    (apply func args)))
+
 ;;;###autoload
 (define-minor-mode dumbparens-mode
   "Minor mode for dealing with paired delimiters in a simple way."
   nil nil nil
   (if dumbparens-mode
-      (add-hook 'post-self-insert-hook #'dumbparens--post-self-insert-hook
-                nil 'local)
-    (remove-hook 'post-self-insert-hook #'dumbparens--post-self-insert-hook
-                 'local)))
+      (progn
+        (add-hook 'post-self-insert-hook #'dumbparens--post-self-insert-command
+                  nil 'local)
+        (advice-add #'delete-forward-char :around
+                    #'dumbparens--handle-delete-char)
+        (advice-add #'delete-backward-char :around
+                    #'dumbparens--handle-delete-char))
+    (remove-hook 'post-self-insert-hook #'dumbparens--post-self-insert-command
+                 'local)
+    (advice-remove #'delete-forward-char #'dumbparens--handle-delete-char)
+    (advice-remove #'delete-backward-char #'dumbparens--handle-delete-char)))
 
 ;;;###autoload
 (define-globalized-minor-mode dumbparens-global-mode
