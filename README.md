@@ -19,6 +19,8 @@ Usage is as follows. First install with
     (straight-use-package
       '(dumbparens :host github :repo "raxod502/dumbparens"))
 
+Then type `M-x dumbparens-mode` or `M-x dumbparens-global-mode`.
+
 To run the tests, evaluate the contents of `dumbparens-tests.el` and
 then type `M-x dumbparens-run-all-tests`. Since Dumbparens has a goal
 of **always** doing something reasonable, any unreasonable behavior
