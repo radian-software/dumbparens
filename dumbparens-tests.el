@@ -17,11 +17,15 @@
 
 (defvar dumbparens-tests nil
   "List of unit tests, an alist.")
+(setq dumbparens-tests nil)
 
 (cl-defmacro dumbparens-test (name desc &rest kws &key mode before keys after)
   "Declare a unit test."
   (declare (indent defun) (doc-string 2))
-  `(setf (alist-get ',name dumbparens-tests) '(:desc ,desc ,@kws)))
+  `(progn
+     (when (alist-get ',name dumbparens-tests)
+       (message "Overwriting existing test: %S" ',name))
+     (setf (alist-get ',name dumbparens-tests) '(:desc ,desc ,@kws))))
 
 (defun dumbparens-run-test (name)
   "Run a single unit test. Return non-nil if passed, nil if failed."
