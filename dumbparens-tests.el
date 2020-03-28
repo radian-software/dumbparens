@@ -171,6 +171,55 @@
   :keys "C-d"
   :after "|")
 
+(dumbparens-test type-lone-close-paren
+  "You can type a close paren even with no open paren"
+  :mode elisp
+  :before "|"
+  :keys ")"
+  :after ")|")
+
+(dumbparens-test no-pair-opened-before-symbol
+  "No paired close paren is inserted right before a symbol"
+  :mode elisp
+  :before "|foo"
+  :keys "("
+  :after "(|foo")
+
+(dumbparens-test double-escape-does-not-cancel-type-over-close-quote
+  "You can type over a close quote after a double backslash"
+  :mode elisp
+  :before "\"\\\\|\""
+  :keys "\""
+  :after "\"\\\\\"|")
+
+(dumbparens-test delete-open-paren
+  "You can delete an open paren even if the close paren can't go with it"
+  :mode elisp
+  :before "(|foo bar)"
+  :keys "DEL"
+  :after "|foo bar)")
+
+(dumbparens-test delete-close-paren-forward
+  "You can delete a close paren from in front"
+  :mode elisp
+  :before "(foo bar|)"
+  :keys "C-d"
+  :after "(foo bar|")
+
+(dumbparens-test delete-close-paren-backward
+  "You can delete a close paren from behind"
+  :mode elisp
+  :before "(foo bar)|"
+  :keys "DEL"
+  :after "(foo bar|")
+
+(dumbparens-test re-type-missing-close-paren
+  "Regression: you can type a close paren even if parens are imbalanced"
+  :mode elisp
+  :before "(()|"
+  :keys ")"
+  :after "(())|")
+
 (provide 'dumbparens-test)
 
 ;; Local Variables:
