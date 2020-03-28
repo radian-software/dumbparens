@@ -51,7 +51,8 @@ For use on `post-self-insert-hook'."
            ((and (null (nth 8 state))
                  (nth 1 state)
                  (memq (car (syntax-after (nth 1 state))) '(4 8))
-                 (eq inserted (cdr (syntax-after (nth 1 state)))))
+                 (eq inserted (cdr (syntax-after (nth 1 state))))
+                 (eq inserted (char-after)))
             (forward-char))
            ;; Insert a closing paren to match an open paren.
            ((and (null (nth 8 state))
