@@ -64,6 +64,9 @@
         (condition-case e
             (execute-kbd-macro (kbd (plist-get test :keys)))
           (error
+           (insert "|")
+           (end-of-buffer)
+           (insert " [" (error-message-string e) "]")
            (setq failed (error-message-string e))
            (cl-return)))
         (insert "|")
