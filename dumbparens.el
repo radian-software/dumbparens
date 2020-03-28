@@ -21,70 +21,57 @@
 ;; variable declarations in each section, run M-x occur with the
 ;; following query: ^;;;;* \|^(
 
-;; Required reading on syntax tables:
-;; https://www.gnu.org/software/emacs/manual/html_node/elisp/Syntax-Class-Table.html
-;; https://www.gnu.org/software/emacs/manual/html_node/elisp/Syntax-Table-Internals.html
-
-(defun dumbparens--buffer-substring-with-parens (start end)
-  "Like `buffer-substring' but add text properties at each paren.
-Each character that functions like a paren gets a text property
-`dumbparens--paren' whose value is the raw syntax descriptor.
-START and END are as in `buffer-substring' but they must be in
-the correct order."
-  (let ((str (buffer-substring start end))
-        (idx 0))
-    (save-excursion
-      (goto-char start)
-      (while (< (point) end)
-        (let ((desc (syntax-after (point))))
-          (when (memq (car desc) '(4 5 7 8 14 15))
-            (put-text-property idx (1+ idx) 'dumbparens--paren desc str)))
-        (forward-char)
-        (cl-incf idx)))
-    str))
-
-(defvar dumbparens--change-list nil
-  "List of buffer changes to be handled on `post-command-hook'.
-Each element is a three-item list of a marker, the old text, and
-the new text.")
-
-(defun dumbparens--before-change-function (start end)
-  "Track buffer changes to be handled on `post-command-hook'."
-  (push (list (set-marker (make-marker) start)
-              (dumbparens--buffer-substring-with-parens start end) nil)
-        dumbparens--change-list))
-
-(defun dumbparens--after-change-function (start end len)
-  "Track buffer changes to be handled on `post-command-hook'."
-  (unless (= len (length (nth 1 (car dumbparens--change-list))))
-    (error "after-change-functions: bookkeeping error"))
-  (setf (nth 2 (car dumbparens--change-list))
-        (dumbparens--buffer-substring-with-parens start end)))
-
-(defun dumbparens--post-command-function ()
-  "Fix up buffer to keep parens matched as much as possible."
-  (setq dumbparens--change-list (nreverse dumbparens--change-list))
-  (while dumbparens--change-list
-    (cl-destructuring-bind (loc before after) (pop dumbparens--change-list)
-      )))
+(defun dumbparens--post-self-insert-hook ()
+  "Insert or remove paired delimiters as necessary."
+  ;; https://www.gnu.org/software/emacs/manual/html_node/elisp/Syntax-Class-Table.html
+  ;; https://www.gnu.org/software/emacs/manual/html_node/elisp/Syntax-Table-Internals.html
+  (atomic-change-group
+    (let ((arg (prefix-numeric-value current-prefix-arg))
+          (inserted (char-before)))
+      (delete-char (- arg))
+      (dotimes (_ arg)
+        (let ((state (save-excursion (syntax-ppss))))
+          (cond
+           ;; Type over a closing paren.
+           ((and (null (nth 8 state))
+                 (nth 1 state)
+                 (memq (car (syntax-after (nth 1 state))) '(4 8))
+                 (eq inserted (cdr (syntax-after (nth 1 state)))))
+            (forward-char))
+           ;; Insert a closing paren to match an open paren.
+           ((and (null (nth 8 state))
+                 (memq (car (aref (syntax-table) inserted)) '(4 8))
+                 (or (eobp) (memq (car (syntax-after (point))) '(0 5 12))))
+            (insert inserted)
+            (save-excursion
+              (insert (cdr (aref (syntax-table) inserted)))))
+           ;; Type over a closing quote.
+           ((and (null (nth 4 state))
+                 (nth 3 state)
+                 (if (eq (nth 3 state) t)
+                     (and (eq (char-after) inserted)
+                          (= (car (syntax-after)) 15))
+                   (and (eq (char-after) inserted)
+                        (eq inserted (nth 3 state)))))
+            (forward-char))
+           ;; Insert a closing quote to match an open quote.
+           ((and (null (nth 8 state))
+                 (memq (car (aref (syntax-table) inserted)) '(7 15)))
+            (insert inserted)
+            (save-excursion
+              (insert inserted)))
+           ;; Don't do anything special.
+           (t
+            (insert inserted))))))))
 
 ;;;###autoload
 (define-minor-mode dumbparens-mode
   "Minor mode for dealing with paired delimiters in a simple way."
   nil nil nil
   (if dumbparens-mode
-      (progn
-        (add-hook 'before-change-functions #'dumbparens--before-change-function
-                  nil 'local)
-        (add-hook 'after-change-functions #'dumbparens--after-change-function
-                  nil 'local)
-        (add-hook 'post-command-hook #'dumbparens--post-command-function
-                  nil 'local))
-    (remove-hook 'before-change-functions #'dumbparens--before-change-function
-                 'local)
-    (remove-hook 'after-change-functions #'dumbparens--after-change-function
-                 'local)
-    (remove-hook 'post-command-hook #'dumbparens--post-command-function
+      (add-hook 'post-self-insert-hook #'dumbparens--post-self-insert-hook
+                nil 'local)
+    (remove-hook 'post-self-insert-hook #'dumbparens--post-self-insert-hook
                  'local)))
 
 ;;;###autoload
