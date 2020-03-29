@@ -223,6 +223,75 @@
   :keys ")"
   :after "(())|")
 
+(dumbparens-test delete-escaped-quote
+  "Regression: You can delete an escaped quote without breaking the string"
+  :mode elisp
+  :before "\"\\\"|\""
+  :keys "DEL"
+  :after "\"\\|\"")
+
+(dumbparens-test forward-to-end-of-symbol
+  "You can use C-M-f to move to the end of a symbol"
+  :mode elisp
+  :before "light|ness"
+  :keys "C-M-f"
+  :after "lightness|")
+
+(dumbparens-test forward-over-symbol
+  "You can use C-M-f to move over a symbol"
+  :mode elisp
+  :before "lightness| of being"
+  :keys "C-M-f"
+  :after "lightness of| being")
+
+(dumbparens-test forward-out-of-list
+  "You can use C-M-f to move out of a list"
+  :mode elisp
+  :before "(lightness of| ) being"
+  :keys "C-M-f"
+  :after "(lightness of )| being")
+
+(dumbparens-test forward-over-list
+  "You can use C-M-f to move over a list"
+  :mode elisp
+  :before "unbearable| (lightness of) being"
+  :keys "C-M-f"
+  :after "unbearable (lightness of)| being")
+
+(dumbparens-test forward-with-prefix-arg
+  "You can use C-M-f with a prefix arg to repeat multiple times"
+  :mode elisp
+  :before "((fo|o bar) baz quux)"
+  :keys "C-u 4 C-M-f"
+  :after "((foo bar) baz| quux)")
+
+(dumbparens-test forward-out-of-string
+  "Using C-M-f inside a string exits the string"
+  :mode elisp
+  :before "\"hello| world\""
+  :keys "\"hello world\"|")
+
+(dumbparens-test forward-with-negative-arg
+  "You can use C-M-f to move backwards with a negative prefix arg"
+  :mode elisp
+  :before "light|ness"
+  :keys "C-u -1 C-M-f"
+  :after "|lightness")
+
+(dumbparens-test forward-stops-at-punctuation
+  "C-M-f stops between symbol and punctuation"
+  :mode python
+  :before "foo(|bar, baz, quux)"
+  :keys "C-M-f"
+  :after "foo(bar|, bar, quux)")
+
+(dumbparens-test forward-passes-through-punctuation
+  "C-M-f will continue through punctuation when needed"
+  :mode python
+  :before "foo(|bar, baz, quux)"
+  :keys "C-u 2 C-M-f"
+  :after "foo(bar, baz|, quux)")
+
 (provide 'dumbparens-test)
 
 ;; Local Variables:

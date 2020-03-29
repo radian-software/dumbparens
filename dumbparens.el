@@ -25,7 +25,25 @@
 (require 'map)
 
 (defcustom dumbparens-mode-bindings
-  '(([remap delete-char] . delete-forward-char))
+  '(([remap delete-char]  . delete-forward-char)
+    ("C-M-f"     . dumbparens-forward)
+    ("C-M-b"     . dumbparens-backward)
+    ("C-M-n"     . dumbparens-up-forward)
+    ("C-M-u"     . dumbparens-up-backward)
+    ("C-k"       . dumbparens-kill-line)
+    ("C-("       . dumbparens-wrap)
+    ("M-("       . dumbparens-wrap-round)
+    ("M-["       . dumbparens-wrap-square)
+    ("C-{"       . dumbparens-wrap-curly)
+    ("M-s"       . dumbparens-splice)
+    ("M-<down>"  . dumbparens-splice-killing-forward)
+    ("M-<up>"    . dumbparens-splice-killing-backward)
+    ("M-r"       . dumbparens-raise)
+    ("M-?"       . dumbparens-convolute)
+    ("C-<right>" . dumbparens-slurp-forward)
+    ("C-<left>"  . dumbparens-barf-forward)
+    ("M-S"       . dumbparens-split)
+    ("M-j"       . dumbparens-join))
   "Keybindings enabled in `dumbparens-mode'. This is not a keymap.
 Rather it is an alist that is converted into a keymap just before
 `dumbparens-mode' is (re-)enabled. The keys are strings or raw
@@ -99,19 +117,19 @@ advice."
                       (end (point)))
                   (cl-block nil
                     (dotimes (_ (abs n))
-                      (let ((state (syntax-ppss)))
+                      (let ((state (save-excursion (syntax-ppss lhs-point))))
                         (unless (and (null (nth 5 state))
                                      (pcase (car (syntax-after lhs-point))
                                        (`4 (and (null (nth 8 state))
                                                 (eq (char-after rhs-point)
                                                     (cdr (syntax-after lhs-point)))))
-                                       (`7 (and (nth 3 state)
+                                       (`7 (and (null (nth 8 state))
                                                 (eq (char-after rhs-point)
                                                     (char-after lhs-point))))
                                        (`8 (and (null (nth 8 state))
                                                 (eq (char-after rhs-point)
                                                     (char-after lhs-point))))
-                                       (`15 (and (nth 3 state)
+                                       (`15 (and (null (nth 8 state))
                                                  (eq 15 (car (syntax-after rhs-point)))))))
                           (cl-return))
                         (cl-incf num-matched)
@@ -169,6 +187,27 @@ as in `kill-line'."
 With argument N, wrap in that many pairs. With negative N, wrap
 preceding form."
   (interactive "c\np"))
+
+(defun dumbparens-wrap-round (&optional n)
+  "Wrap following form in pair of round parens.
+With argument N, wrap in that many pairs. With negative N, wrap
+preceding form."
+  (interactive "p")
+  (dumbparens-wrap ?\( n))
+
+(defun dumbparens-wrap-square (&optional n)
+  "Wrap following form in pair of square brackets.
+With argument N, wrap in that many pairs. With negative N, wrap
+preceding form."
+  (interactive "p")
+  (dumbparens-wrap ?\[ n))
+
+(defun dumbparens-wrap-curly (&optional n)
+  "Wrap following form in pair of curly braces.
+With argument N, wrap in that many pairs. With negative N, wrap
+preceding form."
+  (interactive "p")
+  (dumbparens-wrap ?{ n))
 
 (defun dumbparens-splice (&optional n)
   "Remove parens of enclosing form. With argument, repeat N times.
