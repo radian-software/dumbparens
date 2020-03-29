@@ -21,6 +21,9 @@
 ;; variable declarations in each section, run M-x occur with the
 ;; following query: ^;;;;* \|^(
 
+(require 'cl-lib)
+(require 'map)
+
 (defcustom dumbparens-mode-bindings
   '(([remap delete-char] . delete-forward-char))
   "Keybindings enabled in `dumbparens-mode'. This is not a keymap.
