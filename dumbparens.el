@@ -129,6 +129,109 @@ advice."
                   (delete-region start end)))))
     (apply func args)))
 
+;; Motion commands
+
+(defun dumbparens-forward (&optional n)
+  "Move to end of current or next form. With argument, repeat N times.
+If at end of enclosing form, call `dumbparens-up-forward'
+instead. With negative N, call `dumbparens-backward' instead."
+  (interactive "p"))
+
+(defun dumbparens-backward (&optional n)
+  "Move to start of current or previous form. With argument, repeat N times.
+If at beginning of enclosing form, call `dumbparens-up-backward'
+instead. With negative N, call `dumbparens-forward' instead."
+  (interactive "p"))
+
+(defun dumbparens-up-forward (&optional n)
+  "Move past end of enclosing form. With argument, repeat N times.
+With negative N, call `dumbparens-up-backward' instead."
+  (interactive "p"))
+
+(defun dumbparens-up-backward (&optional n)
+  "Move before start of enclosing form. With argument, repeat N times.
+With negative N, call `dumbparens-up-forward' instead."
+  (interactive "p"))
+
+;; Deletion commands
+
+(defun dumbparens-kill-line (&optional n)
+  "Kill remainder of current line.
+If killing an open paren, kill all the way to the close paren as
+well. With argument N, kill that many lines in either direction,
+as in `kill-line'."
+  (interactive "p"))
+
+;; Depth-changing commands
+
+(defun dumbparens-wrap (char &optional n)
+  "Wrap following form in paren CHAR and its matched pair.
+With argument N, wrap in that many pairs. With negative N, wrap
+preceding form."
+  (interactive "c\np"))
+
+(defun dumbparens-splice (&optional n)
+  "Remove parens of enclosing form. With argument, repeat N times.
+Negative N is the same as positive."
+  (interactive "p"))
+
+(defun dumbparens-splice-killing-forward (&optional n)
+  "Kill to end of enclosing form and then remove parens.
+With argument, repeat N times. With negative N, kill to start
+instead."
+  (interactive "p"))
+
+(defun dumbparens-splice-killing-backward (&optional n)
+  "Kill to start of enclosing form and then remove parens.
+With argument, repeat N times. With negative N, kill to end
+instead."
+  (interactive "p"))
+
+(defun dumbparens-raise (&optional n)
+  "Kill contents of enclosing form except current form and then remove parens.
+With argument, repeat N times. Negative N is the same as
+positive."
+  (interactive "p"))
+
+(defun dumbparens-convolute (&optional n)
+  "Convolute forms. Sorry, there's no simple explanation for this one.
+Kill to start of enclosing form and splice. Then wrap the new
+enclosing form and insert the killed forms at beginning, before
+the new enclosing form. With argument N, go up N enclosing forms
+instead of just one. Negative N is the same as positive.")
+
+;; Slurp/barf commands
+
+(defun dumbparens-slurp-forward (&optional n)
+  "Slurp next (or next N) forms into enclosing form.
+With negative N, call `dumbparens-slurp-backward' instead."
+  (interactive "p"))
+
+(defun dumbparens-slurp-backward (&optional n)
+  "Slurp previous (or previous N) forms into enclosing form.
+With negative N, call `dumbparens-slurp-forward' instead."
+  (interactive "p"))
+
+(defun dumbparens-barf-forward (&optional n)
+  "Barf last (or last N) forms out of enclosing form.
+With negative N, call `dumbparens-barf-backward' instead."
+  (interactive "p"))
+
+(defun dumbparens-barf-backward (&optional n)
+  "Barf first (or first N) forms out of enclosing form.
+With negative N, call `dumbparens-barf-forward' instead."
+  (interactive "p"))
+
+;; Miscellaneous commands
+
+(defun dumbparens-split ()
+  "Split current form at point into two separate forms."
+  (interactive))
+
+(defun dumbparens-join ()
+  "Join forms on either side of point into a single form."
+  (interactive))
+
 (defvar dumbparens-mode--keymap (make-sparse-keymap)
   "Keymap for `dumbparens-mode'. Populated when mode is enabled.
 See `dumbparens-mode-bindings'.")
