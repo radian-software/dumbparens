@@ -24,6 +24,12 @@
 (require 'cl-lib)
 (require 'map)
 
+(defgroup dumbparens nil
+  "Finally, reasonable parenthesis-matching for Emacs"
+  :group 'convenience
+  :prefix "dumbparens-"
+  :link '(url-link "https://github.com/raxod502/dumbparens"))
+
 (defcustom dumbparens-mode-bindings
   '(([remap delete-char]  . delete-forward-char)
     ("C-M-f"     . dumbparens-forward)
