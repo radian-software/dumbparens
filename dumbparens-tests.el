@@ -38,6 +38,12 @@
   (let* ((test (alist-get name dumbparens-tests))
          (bufname (format " *dumbparens test %S*" name))
          (failed nil))
+    (unless (and (plist-get test :mode)
+                 (symbolp (plist-get test :mode))
+                 (stringp (plist-get test :before))
+                 (stringp (plist-get test :keys))
+                 (stringp (plist-get test :after)))
+      (user-error "Incomplete test: %S" name))
     (when (get-buffer bufname)
       (kill-buffer bufname))
     (cl-block nil
@@ -269,7 +275,8 @@
   "Using C-M-f inside a string exits the string"
   :mode elisp
   :before "\"hello| world\""
-  :keys "\"hello world\"|")
+  :keys "C-M-f"
+  :after "\"hello world\"|")
 
 (dumbparens-test forward-with-negative-arg
   "You can use C-M-f to move backwards with a negative prefix arg"
@@ -283,7 +290,7 @@
   :mode python
   :before "foo(|bar, baz, quux)"
   :keys "C-M-f"
-  :after "foo(bar|, bar, quux)")
+  :after "foo(bar|, baz, quux)")
 
 (dumbparens-test forward-passes-through-punctuation
   "C-M-f will continue through punctuation when needed"

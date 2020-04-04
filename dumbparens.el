@@ -62,6 +62,13 @@ key events and the values are command symbols."
          (when (bound-and-true-p dumbparens-mode)
            (dumbparens-mode +1))))
 
+(defun dumbparens--skip-syntax-forward (syntax)
+  "Like `skip-syntax-forward', but signal `end-of-buffer' on failed search.
+For SYNTAX see `skip-syntax-forward'."
+  (prog1 (skip-syntax-forward syntax)
+    (when (eobp)
+      (signal 'end-of-buffer nil))))
+
 (defun dumbparens--post-self-insert-command ()
   "Insert or remove paired delimiters as necessary.
 For use on `post-self-insert-hook'."
@@ -155,27 +162,124 @@ advice."
 
 ;; Motion commands
 
+(defun dumbparens--skip-whitespace-and-comments-forward
+    (&optional include-punctuation)
+  "Move forward over whitespace and comments from point.
+INCLUDE-PUNCTUATION non-nil means to also move forward over
+punctuation."
+  (cl-block nil
+    (while t
+      (let ((state (syntax-ppss)))
+        (cond
+         ;; If inside a string, we're done.
+         ((nth 3 state)
+          (cl-return))
+         ;; If inside a comment, move out of it.
+         ((nth 4 state)
+          (goto-char (nth 8 state))
+          (let ((closer (cdr (syntax-after (point)))))
+            (dumbparens--skip-syntax-forward
+             (if (eq (car (syntax-after (point))) 11)
+                 "^>"
+               "^!"))
+            (forward-char)))
+         ;; Skip over whitespace, comment starters and enders (the
+         ;; latter in case of empty comments), and possibly also
+         ;; punctuation.
+         ((memq (car (syntax-after (point)))
+                (append '(0 11 12) (when include-punctuation '(1))))
+          (skip-syntax-forward
+           (concat "-<>" (when include-punctuation "."))))
+         ;; Otherwise, we are done.
+         (t
+          (cl-return)))))))
+
+(defun dumbparens--up-string-forward ()
+  "Assuming point is within a string, move after its closing quote."
+  (let ((state (syntax-ppss)))
+    (if-let ((closer (nth 3 state)))
+        (progn
+          (goto-char (nth 8 state))
+          (forward-char)
+          (cl-block nil
+            (while t
+              (dumbparens--skip-syntax-forward
+               (if (eq closer t)
+                   "^\\/|"
+                 "^\"/|"))
+              (when (if (eq closer t)
+                        (eq (car (syntax-after)) 15)
+                      (eq (char-after) closer))
+                (forward-char)
+                (cl-return))
+              (if (memq (car (syntax-after)) '(9 10))
+                  (forward-char 2)
+                (forward-char)))))
+      (error "Not currently inside a string"))))
+
 (defun dumbparens-forward (&optional n)
   "Move to end of current or next form. With argument, repeat N times.
 If at end of enclosing form, call `dumbparens-up-forward'
 instead. With negative N, call `dumbparens-backward' instead."
-  (interactive "p"))
+  (interactive "p")
+  (setq n (or n 1))
+  (if (< n 0)
+      (dumbparens-backward (- n))
+    (dotimes (_ n)
+      (let ((state (syntax-ppss)))
+        (if (nth 3 state)
+            ;; If inside string, move to end of it.
+            (dumbparens--up-string-forward)
+          (dumbparens--skip-whitespace-and-comments-forward
+           'include-punctuation)
+          (setq state (syntax-ppss))
+          (when (nth 5 state)
+            (condition-case _
+                (forward-char)
+              (end-of-buffer)))
+          (cond
+           ;; If at end of list, move out of it.
+           ((and (nth 1 state)
+                 (= (1+ (point))
+                    (scan-lists (nth 1 state) 1 0)))
+            (forward-char))
+           ;; If at beginning of list, move over it.
+           ((memq (car (syntax-after (point))) '(4 8))
+            (goto-char (scan-lists (point) 1 0)))
+           ;; If at beginning of string, move over it.
+           ((memq (car (syntax-after (point))) '(7 15))
+            (forward-char)
+            (dumbparens--up-string-forward))
+           ;; Otherwise, move over one symbol.
+           (t
+            (cl-block nil
+              (while t
+                (skip-syntax-forward "w_'")
+                (if (memq (car (syntax-after (point))) '(9 10))
+                    (condition-case _
+                        (forward-char 2)
+                      (end-of-buffer (cl-return)))
+                  (cl-return))))
+            (skip-syntax-forward "w_"))))))))
 
 (defun dumbparens-backward (&optional n)
   "Move to start of current or previous form. With argument, repeat N times.
 If at beginning of enclosing form, call `dumbparens-up-backward'
 instead. With negative N, call `dumbparens-forward' instead."
-  (interactive "p"))
+  (interactive "p")
+  (setq n (or n 1)))
 
 (defun dumbparens-up-forward (&optional n)
   "Move past end of enclosing form. With argument, repeat N times.
 With negative N, call `dumbparens-up-backward' instead."
-  (interactive "p"))
+  (interactive "p")
+  (setq n (or n 1)))
 
 (defun dumbparens-up-backward (&optional n)
   "Move before start of enclosing form. With argument, repeat N times.
 With negative N, call `dumbparens-up-forward' instead."
-  (interactive "p"))
+  (interactive "p")
+  (setq n (or n 1)))
 
 ;; Deletion commands
 
@@ -184,7 +288,8 @@ With negative N, call `dumbparens-up-forward' instead."
 If killing an open paren, kill all the way to the close paren as
 well. With argument N, kill that many lines in either direction,
 as in `kill-line'."
-  (interactive "p"))
+  (interactive "p")
+  (setq n (or n 1)))
 
 ;; Depth-changing commands
 
@@ -192,13 +297,15 @@ as in `kill-line'."
   "Wrap following form in paren CHAR and its matched pair.
 With argument N, wrap in that many pairs. With negative N, wrap
 preceding form."
-  (interactive "c\np"))
+  (interactive "c\np")
+  (setq n (or n 1)))
 
 (defun dumbparens-wrap-round (&optional n)
   "Wrap following form in pair of round parens.
 With argument N, wrap in that many pairs. With negative N, wrap
 preceding form."
   (interactive "p")
+  (setq n (or n 1))
   (dumbparens-wrap ?\( n))
 
 (defun dumbparens-wrap-square (&optional n)
@@ -206,6 +313,7 @@ preceding form."
 With argument N, wrap in that many pairs. With negative N, wrap
 preceding form."
   (interactive "p")
+  (setq n (or n 1))
   (dumbparens-wrap ?\[ n))
 
 (defun dumbparens-wrap-curly (&optional n)
@@ -213,59 +321,70 @@ preceding form."
 With argument N, wrap in that many pairs. With negative N, wrap
 preceding form."
   (interactive "p")
+  (setq n (or n 1))
   (dumbparens-wrap ?{ n))
 
 (defun dumbparens-splice (&optional n)
   "Remove parens of enclosing form. With argument, repeat N times.
 Negative N is the same as positive."
-  (interactive "p"))
+  (interactive "p")
+  (setq n (or n 1)))
 
 (defun dumbparens-splice-killing-forward (&optional n)
   "Kill to end of enclosing form and then remove parens.
 With argument, repeat N times. With negative N, kill to start
 instead."
-  (interactive "p"))
+  (interactive "p")
+  (setq n (or n 1)))
 
 (defun dumbparens-splice-killing-backward (&optional n)
   "Kill to start of enclosing form and then remove parens.
 With argument, repeat N times. With negative N, kill to end
 instead."
-  (interactive "p"))
+  (interactive "p")
+  (setq n (or n 1)))
 
 (defun dumbparens-raise (&optional n)
   "Kill contents of enclosing form except current form and then remove parens.
 With argument, repeat N times. Negative N is the same as
 positive."
-  (interactive "p"))
+  (interactive "p")
+  (setq n (or n 1)))
 
 (defun dumbparens-convolute (&optional n)
   "Convolute forms. Sorry, there's no simple explanation for this one.
 Kill to start of enclosing form and splice. Then wrap the new
 enclosing form and insert the killed forms at beginning, before
 the new enclosing form. With argument N, go up N enclosing forms
-instead of just one. Negative N is the same as positive.")
+instead of just one. Negative N is the same as positive."
+  (interactive "p")
+  (setq n (or n 1)))
 
 ;; Slurp/barf commands
 
 (defun dumbparens-slurp-forward (&optional n)
   "Slurp next (or next N) forms into enclosing form.
 With negative N, call `dumbparens-slurp-backward' instead."
-  (interactive "p"))
+  (interactive "p")
+  (setq n (or n 1)))
 
 (defun dumbparens-slurp-backward (&optional n)
   "Slurp previous (or previous N) forms into enclosing form.
 With negative N, call `dumbparens-slurp-forward' instead."
-  (interactive "p"))
+  (interactive "p")
+  (setq n (or n 1)))
 
 (defun dumbparens-barf-forward (&optional n)
   "Barf last (or last N) forms out of enclosing form.
 With negative N, call `dumbparens-barf-backward' instead."
-  (interactive "p"))
+  (interactive "p")
+  (setq n (or n 1)))
 
 (defun dumbparens-barf-backward (&optional n)
   "Barf first (or first N) forms out of enclosing form.
 With negative N, call `dumbparens-barf-forward' instead."
-  (interactive "p"))
+  (interactive "p")
+  (setq n (or n 1)))
 
 ;; Miscellaneous commands
 
