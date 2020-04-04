@@ -278,13 +278,6 @@
   :keys "C-M-f"
   :after "\"hello world\"|")
 
-(dumbparens-test forward-with-negative-arg
-  "You can use C-M-f to move backwards with a negative prefix arg"
-  :mode elisp
-  :before "light|ness"
-  :keys "C-u -1 C-M-f"
-  :after "|lightness")
-
 (dumbparens-test forward-stops-at-punctuation
   "C-M-f stops between symbol and punctuation"
   :mode python
@@ -298,6 +291,125 @@
   :before "foo(|bar, baz, quux)"
   :keys "C-u 2 C-M-f"
   :after "foo(bar, baz|, quux)")
+
+(dumbparens-test forward-through-comments
+  "C-M-f will skip comments"
+  :mode elisp
+  :before "foo| ; comment\n;; another comment\n  bar; lol\nbaz"
+  :keys "C-M-f"
+  :after "foo ; comment\n;; another comment\n  bar|; lol\nbaz")
+
+(dumbparens-test forward-escapes-comments
+  "C-M-f can escape the current comment"
+  :mode elisp
+  :before ";; com|ment\nfoo bar"
+  :keys "C-M-f"
+  :after ";; comment\nfoo| bar")
+
+(dumbparens-test forward-includes-escapes-in-symbols
+  "C-M-f counts escape sequences as part of symbols"
+  :mode elisp
+  :before "(foo |b\\(ar baz)"
+  :keys "C-M-f"
+  :after "(foo b\\(ar| baz)")
+
+(dumbparens-test forward-from-within-escape
+  "C-M-f works correctly even starting in the middle of an escape sequence"
+  :mode elisp
+  :before "(foo b\\|(bar baz)"
+  :keys "C-M-f"
+  :after "(foo b\\(bar| baz)")
+
+(dumbparens-test forward-skips-expression-prefixes-before-symbols-only
+  "C-M-f skips expression prefixes before symbols but not after"
+  :mode elisp
+  :before "| ,foo, bar"
+  :keys "C-M-f"
+  :after " ,foo|, bar")
+
+(dumbparens-test backward-to-beginning-of-symbol
+  "You can use C-M-b to move to the beginning of a symbol"
+  :mode elisp
+  :before "light|ness"
+  :keys "C-M-b"
+  :after "|lightness")
+
+(dumbparens-test backward-over-symbol
+  "You can use C-M-b to move over a symbol backwards"
+  :mode elisp
+  :before "lightness of |being"
+  :keys "C-M-b"
+  :after "lightness |of being")
+
+(dumbparens-test backward-out-of-list
+  "You can use C-M-b to move out of a list backwards"
+  :mode elisp
+  :before "lightness ( |of being)"
+  :keys "C-M-b"
+  :after "lightness |( of being)")
+
+(dumbparens-test backward-with-prefix-arg
+  "You can use C-M-b with a prefix arg to repeat multiple times"
+  :mode elisp
+  :before "(foo bar (baz qu|ux))"
+  :keys "C-u 4 C-M-b"
+  :after "(foo |bar (baz quux))")
+
+(dumbparens-test backward-out-of-string
+  "Using C-M-b inside a string exits the string"
+  :mode elisp
+  :before "\"hello |world\""
+  :keys "C-M-b"
+  :after "|\"hello world\"")
+
+(dumbparens-test backward-skips-punctuation-after-symbols-only
+  "C-M-b skips punctuation after symbols but not before"
+  :mode elisp
+  :before "foo(bar,baz,|quux)"
+  :keys "C-M-b"
+  :after "foo(bar,|baz,quux)")
+
+(dumbparens-test backward-through-comments
+  "C-M-b will skip comments"
+  :mode elisp
+  :before "foo bar ; baz\n |quux"
+  :keys "C-M-b"
+  :after "foo |bar ; baz\n quux")
+
+(dumbparens-test backward-escapes-comments
+  "C-M-b can escape the current comment"
+  :mode elisp
+  :before "foo bar ; ba|z\n quux"
+  :keys "C-M-b"
+  :after "foo |bar ; baz\n quux")
+
+(dumbparens-test backward-includes-escapes-in-symbols
+  "C-M-b counts escape sequences as part of symbols"
+  :mode elisp
+  :before "(foo b\\(ar| baz)"
+  :keys "C-M-b"
+  :after "(foo |b\\(ar baz)")
+
+(dumbparens-test backward-from-within-escape
+  "C-M-b works correctly even starting in the middle of an escape sequence"
+  :mode elisp
+  :before "(foo b\\|(bar baz)"
+  :keys "C-M-b"
+  :after "(foo |b\\(bar baz)")
+
+(dumbparens-test forward-with-negative-arg
+  "You can use C-M-f to move backwards with a negative prefix arg"
+  :mode elisp
+  :before "light|ness"
+  :keys "C-u -1 C-M-f"
+  :after "|lightness")
+
+(dumbparens-test backward-with-negative-arg
+  "You can use C-M-b to move forward with a negative prefix arg"
+  :mode elisp
+  :before "light|ness"
+  :keys "C-u -1 C-M-b"
+  :after "lightness|")
 
 (provide 'dumbparens-test)
 

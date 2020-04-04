@@ -166,7 +166,7 @@ advice."
     (&optional include-punctuation)
   "Move forward over whitespace and comments from point.
 INCLUDE-PUNCTUATION non-nil means to also move forward over
-punctuation."
+punctuation and expression prefixes."
   (cl-block nil
     (while t
       (let ((state (syntax-ppss)))
@@ -187,9 +187,35 @@ punctuation."
          ;; latter in case of empty comments), and possibly also
          ;; punctuation.
          ((memq (car (syntax-after (point)))
-                (append '(0 11 12) (when include-punctuation '(1))))
+                (append '(0 11 12) (when include-punctuation '(1 6))))
           (skip-syntax-forward
-           (concat "-<>" (when include-punctuation "."))))
+           (concat "-<>" (when include-punctuation ".'"))))
+         ;; Otherwise, we are done.
+         (t
+          (cl-return)))))))
+
+(defun dumbparens--skip-whitespace-and-comments-backward
+    (&optional include-punctuation)
+  "Move backward over whitespace and comments from point.
+INCLUDE-PUNCTUATION non-nil means to also move forward over
+punctuation and expression prefixes."
+  (cl-block nil
+    (while t
+      (let ((state (syntax-ppss)))
+        (cond
+         ;; If inside a string, we're done.
+         ((nth 3 state)
+          (cl-return))
+         ;; If inside a comment, move out of it.
+         ((nth 4 state)
+          (goto-char (nth 8 state)))
+         ;; Skip over whitespace, comment starters and enders (the
+         ;; latter in case of empty comments), and possibly also
+         ;; punctuation.
+         ((memq (car (syntax-after (1- (point))))
+                (append '(0 11 12) (when include-punctuation '(1 6))))
+          (skip-syntax-backward
+           (concat "-<>" (when include-punctuation ".'"))))
          ;; Otherwise, we are done.
          (t
           (cl-return)))))))
@@ -254,20 +280,54 @@ instead. With negative N, call `dumbparens-backward' instead."
            (t
             (cl-block nil
               (while t
-                (skip-syntax-forward "w_'")
+                (skip-syntax-forward "w_")
                 (if (memq (car (syntax-after (point))) '(9 10))
                     (condition-case _
                         (forward-char 2)
                       (end-of-buffer (cl-return)))
-                  (cl-return))))
-            (skip-syntax-forward "w_"))))))))
+                  (cl-return)))))))))))
 
 (defun dumbparens-backward (&optional n)
   "Move to start of current or previous form. With argument, repeat N times.
 If at beginning of enclosing form, call `dumbparens-up-backward'
 instead. With negative N, call `dumbparens-forward' instead."
   (interactive "p")
-  (setq n (or n 1)))
+  (setq n (or n 1))
+  (if (< n 0)
+      (dumbparens-forward (- n))
+    (dotimes (_ n)
+      (let ((state (syntax-ppss)))
+        ;; If inside string, move out of it.
+        (if (nth 3 state)
+            (goto-char (nth 8 state))
+          (dumbparens--skip-whitespace-and-comments-backward
+           'include-punctuation)
+          (setq state (syntax-ppss))
+          (cond
+           ;; If at beginning of list, move out of it.
+           ((and (nth 1 state)
+                 (= (1- (point))
+                    (nth 1 state)))
+            (backward-char))
+           ;; If at end of list, move over it.
+           ((memq (car (syntax-after (1- (point)))) '(5 8))
+            (backward-char)
+            (if-let ((beg (nth 1 (syntax-ppss))))
+                (goto-char beg)
+              (beginning-of-buffer)
+              (signal 'beginning-of-buffer nil)))
+           ;; Otherwise, move over one symbol.
+           (t
+            (cl-block nil
+              (while t
+                (skip-syntax-backward "w_\\/")
+                (if (and (/= (point) (point-min))
+                         (nth 5 (save-excursion
+                                  (syntax-ppss (1- (point))))))
+                    (condition-case _
+                        (backward-char 2)
+                      (beginning-of-buffer (cl-return)))
+                  (cl-return)))))))))))
 
 (defun dumbparens-up-forward (&optional n)
   "Move past end of enclosing form. With argument, repeat N times.
