@@ -22,6 +22,7 @@
 (cl-defmacro dumbparens-test (name desc &rest kws &key mode before keys after)
   "Declare a unit test."
   (declare (indent defun) (doc-string 2))
+  (ignore mode before keys after)
   `(progn
      (when (alist-get ',name dumbparens-tests)
        (message "Overwriting existing test: %S" ',name))
@@ -57,11 +58,11 @@
           (setq mode (intern mode))
           (funcall mode))
         (dumbparens-mode +1)
-        (when (bound-and-true-p smartparens-mode)
+        (when (fboundp 'smartparens-mode)
           (smartparens-mode -1))
-        (when (bound-and-true-p electric-pair-mode)
+        (when (fboundp 'electric-pair-mode)
           (electric-pair-mode -1))
-        (when (bound-and-true-p paredit-mode)
+        (when (fboundp 'paredit-mode)
           (paredit-mode -1))
         (save-excursion
           (insert (plist-get test :before)))
@@ -71,7 +72,7 @@
             (execute-kbd-macro (kbd (plist-get test :keys)))
           (error
            (insert "|")
-           (end-of-buffer)
+           (goto-char (point-max))
            (insert " [" (error-message-string e) "]")
            (setq failed (error-message-string e))
            (cl-return)))
@@ -98,7 +99,12 @@
            actual
            "\n"))
         (dumbparens-test-mode +1))
-      (pop-to-buffer bufname)
+      (if noninteractive
+          (progn
+            (message "%s" (with-current-buffer bufname
+                            (string-trim (buffer-string))))
+            (kill-emacs 1))
+        (pop-to-buffer bufname))
       nil)))
 
 (defun dumbparens-run-all-tests ()
@@ -396,6 +402,13 @@
   :before "(foo b\\|(bar baz)"
   :keys "C-M-b"
   :after "(foo |b\\(bar baz)")
+
+(dumbparens-test backward-over-string
+  "You can use C-M-b to move backward over a string"
+  :mode elisp
+  :before "hello \"world\" |lol"
+  :keys "C-M-b"
+  :after "hello |\"world\" lol")
 
 (dumbparens-test forward-with-negative-arg
   "You can use C-M-f to move backwards with a negative prefix arg"
