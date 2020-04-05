@@ -38,7 +38,7 @@
       (mapcar #'symbol-name (map-keys dumbparens-tests))))))
   (let* ((test (alist-get name dumbparens-tests))
          (bufname (format " *dumbparens test %S*" name))
-         (failed nil))
+         (result nil))
     (unless (and (plist-get test :mode)
                  (symbolp (plist-get test :mode))
                  (stringp (plist-get test :before))
@@ -71,33 +71,32 @@
         (condition-case e
             (execute-kbd-macro (kbd (plist-get test :keys)))
           (error
-           (insert "|")
-           (goto-char (point-max))
-           (insert " [" (error-message-string e) "]")
-           (setq failed (error-message-string e))
-           (cl-return)))
+           (save-excursion
+             (goto-char (point-max))
+             (insert " [" (error-message-string e) "]"))))
         (insert "|")
-        (unless (equal (buffer-string) (plist-get test :after))
-          (setq failed "text does not match expected")
-          (cl-return))))
-    (if (not failed)
+        (setq result (buffer-string))))
+    (if (equal result (plist-get test :after))
         (progn
           (message "Test %S passed" name)
           t)
-      (message "Test %S failed: %s" name failed)
+      (message "Test %S failed" name)
       (with-current-buffer bufname
-        (let ((actual (buffer-string)))
-          (erase-buffer)
-          (insert
-           "BEFORE:\n\n"
-           (plist-get test :before)
-           "\n\nKEYS:\n\n"
-           (plist-get test :keys)
-           "\n\nEXPECTED:\n\n"
-           (plist-get test :after)
-           "\n\nGOT:\n\n"
-           actual
-           "\n"))
+        (erase-buffer)
+        (insert
+         "TEST:\n\n"
+         (symbol-name name)
+         "\n"
+         (plist-get test :desc)
+         "\n\nBEFORE:\n\n"
+         (plist-get test :before)
+         "\n\nKEYS:\n\n"
+         (plist-get test :keys)
+         "\n\nEXPECTED:\n\n"
+         (plist-get test :after)
+         "\n\nGOT:\n\n"
+         result
+         "\n")
         (dumbparens-test-mode +1))
       (if noninteractive
           (progn
@@ -229,7 +228,7 @@
   :after "(foo bar|")
 
 (dumbparens-test re-type-missing-close-paren
-  "Regression: you can type a close paren even if parens are imbalanced"
+  "Regression: You can type a close paren even if parens are imbalanced"
   :mode elisp
   :before "(()|"
   :keys ")"
@@ -241,6 +240,13 @@
   :before "\"\\\"|\""
   :keys "DEL"
   :after "\"\\|\"")
+
+(dumbparens-test delete-pair-after-space
+  "SP regression: Deleting a pair does not also delete the preceding space"
+  :mode elisp
+  :before " (|)"
+  :keys "DEL"
+  :after " |")
 
 (dumbparens-test forward-to-end-of-symbol
   "You can use C-M-f to move to the end of a symbol"
@@ -423,6 +429,76 @@
   :before "light|ness"
   :keys "C-u -1 C-M-b"
   :after "lightness|")
+
+(dumbparens-test up-forward-from-list
+  "You can use C-M-n to move to the end of a list"
+  :mode elisp
+  :before "(foo (ba|r baz) quux)"
+  :keys "C-M-n"
+  :after "(foo (bar baz)| quux)")
+
+(dumbparens-test up-forward-outside-list
+  "Using C-M-n outside a list moves to the end of the buffer"
+  :mode elisp
+  :before "foo| (bar baz) quux"
+  :keys "C-M-n"
+  :after "foo (bar baz) quux| [End of buffer]")
+
+(dumbparens-test up-forward-from-string
+  "You can use C-M-n to move to the end of a string"
+  :mode elisp
+  :before "hello \"w (o|r) ld\" lol"
+  :keys "C-M-n"
+  :after "hello \"w (or) ld\"| lol")
+
+(dumbparens-test up-forward-from-within-escape-sequence
+  "C-M-n works correctly even within an escape sequence"
+  :mode elisp
+  :before "(foo bar\\|(baz) quux)"
+  :keys "C-M-n"
+  :after "(foo bar\\(baz)| quux)")
+
+(dumbparens-test up-forward-from-comment
+  "C-M-n ignores stuff in comments"
+  :mode elisp
+  :before "(foo ; bar (baz| quux)\nlol) qat"
+  :keys "C-M-n"
+  :after "(foo ; bar (baz quux)\nlol)| qat")
+
+(dumbparens-test up-backward-from-list
+  "You can use C-M-u to move to the beginning of a list"
+  :mode elisp
+  :before "(foo (ba|r baz) quux)"
+  :keys "C-M-u"
+  :after "(foo |(bar baz) quux)")
+
+(dumbparens-test up-backward-outside-list
+  "Using C-M-u outside a list moves to the end of the buffer"
+  :mode elisp
+  :before "foo (bar baz) |quux"
+  :keys "C-M-u"
+  :after "|foo (bar baz) quux [Beginning of buffer]")
+
+(dumbparens-test up-backward-from-string
+  "You can use C-M-u to move to the beginning of a string"
+  :mode elisp
+  :before "hello \"w (o|r) ld\" lol"
+  :keys "C-M-u"
+  :after "hello |\"w (or) ld\" lol")
+
+(dumbparens-test up-backward-from-within-escape-sequence
+  "C-M-u works correctly even within an escape sequence"
+  :mode elisp
+  :before "(foo bar\\|(baz) quux)"
+  :keys "C-M-u"
+  :after "|(foo bar\\(baz) quux)")
+
+(dumbparens-test up-backward-from-comment
+  "C-M-u ignores stuff in comments"
+  :mode elisp
+  :before "(foo ; bar (baz| quux)\nlol) qat"
+  :keys "C-M-u"
+  :after "|(foo ; bar (baz quux)\nlol) qat")
 
 (provide 'dumbparens-test)
 

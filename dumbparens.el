@@ -341,13 +341,50 @@ instead. With negative N, call `dumbparens-forward' instead."
   "Move past end of enclosing form. With argument, repeat N times.
 With negative N, call `dumbparens-up-backward' instead."
   (interactive "p")
-  (setq n (or n 1)))
+  (setq n (or n 1))
+  (if (< n 0)
+      (dumbparens-up-backward (- n))
+    (dotimes (_ n)
+      (let ((state (syntax-ppss)))
+        (if (nth 3 state)
+            ;; If inside string, move to end of it.
+            (dumbparens--up-string-forward)
+          ;; Get out of any comments, since they may confuse
+          ;; `scan-lists'.
+          (dumbparens--skip-whitespace-and-comments-forward)
+          (setq state (syntax-ppss))
+          ;; If we're after an escape character, then `scan-lists'
+          ;; will also do the wrong thing.
+          (when (nth 5 state)
+            (backward-char))
+          ;; Otherwise, move out of current list.
+          (condition-case _
+              (goto-char (scan-lists (point) 1 1))
+            (scan-error
+             (goto-char (point-max))
+             (signal 'end-of-buffer nil))))))))
 
 (defun dumbparens-up-backward (&optional n)
   "Move before start of enclosing form. With argument, repeat N times.
 With negative N, call `dumbparens-up-forward' instead."
   (interactive "p")
-  (setq n (or n 1)))
+  (setq n (or n 1))
+  (if (< n 0)
+      (dumbparens-up-forward (- n))
+    (dotimes (_ n)
+      (let ((state (syntax-ppss)))
+        (cond
+         ;; If inside string, move to beginning of it.
+         ((nth 3 state)
+          (goto-char (nth 8 state)))
+         ;; Otherwise, move out of current list.
+         ((nth 1 state)
+          (goto-char (nth 1 state)))
+         ;; If not inside any list, we hit the beginning of the
+         ;; buffer.
+         (t
+          (goto-char (point-min))
+          (signal 'beginning-of-buffer nil)))))))
 
 ;; Deletion commands
 
