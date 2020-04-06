@@ -510,7 +510,7 @@
   "C-k handles escape sequences correctly"
   :before "(foo bar\\|(baz quux)"
   :keys "C-k"
-  :after "(foo bar|)")
+  :after "(foo bar\\|)")
 
 (provide 'dumbparens-test)
 

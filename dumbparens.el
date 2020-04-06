@@ -422,14 +422,6 @@ newline unless point is at end-of-line already."
                          (if (> n 0)
                              (< (point) normal-kill-to)
                            (> (point) normal-kill-to))))
-         (kill-from (save-excursion
-                      (when (nth 5 (syntax-ppss))
-                        (if (> n 0)
-                            (backward-char)
-                          (condition-case _
-                              (forward-char)
-                            (end-of-buffer))))
-                      (point)))
          (kill-to (save-excursion
                     (cl-block nil
                       (while t
@@ -446,7 +438,7 @@ newline unless point is at end-of-line already."
     (if (> n 0)
         (setq kill-to (min bound kill-to))
       (setq kill-to (max bound kill-to)))
-    (kill-region kill-from kill-to)))
+    (kill-region (point) kill-to)))
 
 ;; Depth-changing commands
 
