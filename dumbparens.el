@@ -57,6 +57,8 @@
     ("M-("       . dumbparens-wrap-round)
     ("M-["       . dumbparens-wrap-square)
     ("C-{"       . dumbparens-wrap-curly)
+    ("M-\""      . dumbparens-wrap-double-quote)
+    ("M-'"       . dumbparens-wrap-single-quote)
     ("M-s"       . dumbparens-splice)
     ("M-<down>"  . dumbparens-splice-killing-forward)
     ("M-<up>"    . dumbparens-splice-killing-backward)
@@ -257,6 +259,19 @@ punctuation and expression prefixes."
                 (forward-char)))))
       (error "Not currently inside a string"))))
 
+(defun dumbparens--beginning-of-symbol ()
+  "Move to start of current symbol if currently inside or at end of one."
+  (cl-block nil
+    (while t
+      (skip-syntax-backward "w_\\/")
+      (if (and (/= (point) (point-min))
+               (nth 5 (save-excursion
+                        (syntax-ppss (1- (point))))))
+          (condition-case _
+              (backward-char 2)
+            (beginning-of-buffer (cl-return)))
+        (cl-return)))))
+
 (defun dumbparens-forward (&optional n)
   "Move to end of current or next form. With argument, repeat N times.
 If at end of enclosing form, call `dumbparens-up-forward'
@@ -339,16 +354,7 @@ instead. With negative N, call `dumbparens-forward' instead."
               (signal 'beginning-of-buffer nil)))
            ;; Otherwise, move over one symbol.
            (t
-            (cl-block nil
-              (while t
-                (skip-syntax-backward "w_\\/")
-                (if (and (/= (point) (point-min))
-                         (nth 5 (save-excursion
-                                  (syntax-ppss (1- (point))))))
-                    (condition-case _
-                        (backward-char 2)
-                      (beginning-of-buffer (cl-return)))
-                  (cl-return)))))))))))
+            (dumbparens--beginning-of-symbol))))))))
 
 (defun dumbparens-up-forward (&optional n)
   "Move past end of enclosing form. With argument, repeat N times.
@@ -457,35 +463,51 @@ newline unless point is at end-of-line already."
 
 (defun dumbparens-wrap (char &optional n)
   "Wrap following form in paren CHAR and its matched pair.
-With argument N, wrap in that many pairs. With negative N, wrap
-preceding form."
+With argument N, wrap that many forms. With negative N, wrap
+preceding form(s)."
   (interactive "c\np")
   (setq n (or n 1))
   (ignore char))
 
 (defun dumbparens-wrap-round (&optional n)
   "Wrap following form in pair of round parens.
-With argument N, wrap in that many pairs. With negative N, wrap
-preceding form."
+With argument N, wrap that many forms. With negative N, wrap
+preceding form(s)."
   (interactive "p")
   (setq n (or n 1))
   (dumbparens-wrap ?\( n))
 
 (defun dumbparens-wrap-square (&optional n)
   "Wrap following form in pair of square brackets.
-With argument N, wrap in that many pairs. With negative N, wrap
-preceding form."
+With argument N, wrap that many forms. With negative N, wrap
+preceding form(s)."
   (interactive "p")
   (setq n (or n 1))
   (dumbparens-wrap ?\[ n))
 
 (defun dumbparens-wrap-curly (&optional n)
   "Wrap following form in pair of curly braces.
-With argument N, wrap in that many pairs. With negative N, wrap
-preceding form."
+With argument N, wrap that many forms. With negative N, wrap
+preceding form(s)."
   (interactive "p")
   (setq n (or n 1))
   (dumbparens-wrap ?{ n))
+
+(defun dumbparens-wrap-double-quote (&optional n)
+  "Wrap following form in pair of double quotes.
+With argument N, wrap that many forms. With negative N, wrap
+preceding form(s)."
+  (interactive "p")
+  (setq n (or n 1))
+  (dumbparens-wrap ?\" n))
+
+(defun dumbparens-wrap-single-quote (&optional n)
+  "Wrap following form in pair of single quotes.
+With argument N, wrap that many forms. With negative N, wrap
+preceding form(s)."
+  (interactive "p")
+  (setq n (or n 1))
+  (dumbparens-wrap ?\' n))
 
 (defun dumbparens-splice (&optional n)
   "Remove parens of enclosing form. With argument, repeat N times.
