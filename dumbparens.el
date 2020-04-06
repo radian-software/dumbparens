@@ -389,12 +389,64 @@ With negative N, call `dumbparens-up-forward' instead."
 ;; Deletion commands
 
 (defun dumbparens-kill-line (&optional n)
-  "Kill remainder of current line.
+  "Kill remainder of current line, stopping at close paren.
 If killing an open paren, kill all the way to the close paren as
 well. With argument N, kill that many lines in either direction,
-as in `kill-line'."
-  (interactive "p")
-  (setq n (or n 1)))
+as in `kill-line'. Without argument, don't kill the trailing
+newline unless point is at end-of-line already."
+  (interactive "P")
+  (let* ((arg-given n)
+         (n (or (prefix-numeric-value n) 1))
+         (bound (save-excursion
+                  (if (> n 0)
+                      (condition-case _
+                          (progn
+                            (dumbparens-up-forward)
+                            (1- (point)))
+                        (end-of-buffer (point-max)))
+                    (condition-case _
+                        (progn
+                          (dumbparens-up-backward)
+                          (1+ (point)))
+                      (beginning-of-buffer (point-min))))))
+         (normal-kill-to
+          (save-excursion
+            (cond
+             (arg-given (forward-line n))
+             ((eolp) (condition-case _
+                         (forward-char)
+                       (end-of-buffer)))
+             (t (end-of-line)))
+            (point)))
+         (keep-killing (lambda ()
+                         (if (> n 0)
+                             (< (point) normal-kill-to)
+                           (> (point) normal-kill-to))))
+         (kill-from (save-excursion
+                      (when (nth 5 (syntax-ppss))
+                        (if (> n 0)
+                            (backward-char)
+                          (condition-case _
+                              (forward-char)
+                            (end-of-buffer))))
+                      (point)))
+         (kill-to (save-excursion
+                    (cl-block nil
+                      (while t
+                        (if (> n 0)
+                            (dumbparens--skip-whitespace-and-comments-forward)
+                          (dumbparens--skip-whitespace-and-comments-backward))
+                        (unless (funcall keep-killing)
+                          (cl-return normal-kill-to))
+                        (if (> n 0)
+                            (dumbparens-forward)
+                          (dumbparens-backward))
+                        (unless (funcall keep-killing)
+                          (cl-return (point))))))))
+    (if (> n 0)
+        (setq kill-to (min bound kill-to))
+      (setq kill-to (max bound kill-to)))
+    (kill-region kill-from kill-to)))
 
 ;; Depth-changing commands
 

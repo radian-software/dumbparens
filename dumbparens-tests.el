@@ -39,8 +39,7 @@
   (let* ((test (alist-get name dumbparens-tests))
          (bufname (format " *dumbparens test %S*" name))
          (result nil))
-    (unless (and (plist-get test :mode)
-                 (symbolp (plist-get test :mode))
+    (unless (and (symbolp (plist-get test :mode))
                  (stringp (plist-get test :before))
                  (stringp (plist-get test :keys))
                  (stringp (plist-get test :after)))
@@ -50,7 +49,7 @@
     (cl-block nil
       (save-window-excursion
         (pop-to-buffer bufname)
-        (let ((mode (symbol-name (plist-get test :mode))))
+        (let ((mode (symbol-name (or (plist-get test :mode) 'elisp))))
           (when (equal mode "elisp")
             (setq mode "emacs-lisp"))
           (unless (string-suffix-p "-mode" mode)
@@ -117,175 +116,150 @@
 
 (dumbparens-test open-pair
   "Typing an open paren should insert a close paren"
-  :mode elisp
   :before "|"
   :keys "("
   :after "(|)")
 
 (dumbparens-test type-over-close
   "You can type over a close paren"
-  :mode elisp
   :before "(|)"
   :keys ")"
   :after "()|")
 
 (dumbparens-test open-string
   "Typing a quote should insert a matched pair"
-  :mode elisp
   :before "|"
   :keys "\""
   :after "\"|\"")
 
 (dumbparens-test type-over-close-quote
   "You can type over a close quote"
-  :mode elisp
   :before "\"|\""
   :keys "\""
   :after "\"\"|")
 
 (dumbparens-test delete-pair
   "Backspacing inside an empty pair should delete it"
-  :mode elisp
   :before "(|)"
   :keys "DEL"
   :after "|")
 
 (dumbparens-test delete-string
   "Backspacing inside an empty string should delete it"
-  :mode elisp
   :before "\"|\""
   :keys "DEL"
   :after "|")
 
 (dumbparens-test escape-cancels-type-over-close-quote
   "You won't type over a close quote right after a backslash"
-  :mode elisp
   :before "\"\\|\""
   :keys "\""
   :after "\"\\\"|\"")
 
 (dumbparens-test open-pair-with-prefix-arg
   "You can open multiple pairs at once with a prefix argument"
-  :mode elisp
   :before "|"
   :keys "C-u 3 ("
   :after "(((|)))")
 
 (dumbparens-test type-over-close-with-prefix-arg
   "You can type over multiple close parens at once with a prefix argument"
-  :mode elisp
   :before "(((|)))"
   :keys "C-u 2 )"
   :after "((())|)")
 
 (dumbparens-test delete-pair-forward
   "Typing C-d inside an empty pair should delete it"
-  :mode elisp
   :before "(|)"
   :keys "C-d"
   :after "|")
 
 (dumbparens-test type-lone-close-paren
   "You can type a close paren even with no open paren"
-  :mode elisp
   :before "|"
   :keys ")"
   :after ")|")
 
 (dumbparens-test no-pair-opened-before-symbol
   "No paired close paren is inserted right before a symbol"
-  :mode elisp
   :before "|foo"
   :keys "("
   :after "(|foo")
 
 (dumbparens-test double-escape-does-not-cancel-type-over-close-quote
   "You can type over a close quote after a double backslash"
-  :mode elisp
   :before "\"\\\\|\""
   :keys "\""
   :after "\"\\\\\"|")
 
 (dumbparens-test delete-open-paren
   "You can delete an open paren even if the close paren can't go with it"
-  :mode elisp
   :before "(|foo bar)"
   :keys "DEL"
   :after "|foo bar)")
 
 (dumbparens-test delete-close-paren-forward
   "You can delete a close paren from in front"
-  :mode elisp
   :before "(foo bar|)"
   :keys "C-d"
   :after "(foo bar|")
 
 (dumbparens-test delete-close-paren-backward
   "You can delete a close paren from behind"
-  :mode elisp
   :before "(foo bar)|"
   :keys "DEL"
   :after "(foo bar|")
 
 (dumbparens-test re-type-missing-close-paren
   "Regression: You can type a close paren even if parens are imbalanced"
-  :mode elisp
   :before "(()|"
   :keys ")"
   :after "(())|")
 
 (dumbparens-test delete-escaped-quote
   "Regression: You can delete an escaped quote without breaking the string"
-  :mode elisp
   :before "\"\\\"|\""
   :keys "DEL"
   :after "\"\\|\"")
 
 (dumbparens-test delete-pair-after-space
   "SP regression: Deleting a pair does not also delete the preceding space"
-  :mode elisp
   :before " (|)"
   :keys "DEL"
   :after " |")
 
 (dumbparens-test forward-to-end-of-symbol
   "You can use C-M-f to move to the end of a symbol"
-  :mode elisp
   :before "light|ness"
   :keys "C-M-f"
   :after "lightness|")
 
 (dumbparens-test forward-over-symbol
   "You can use C-M-f to move over a symbol"
-  :mode elisp
   :before "lightness| of being"
   :keys "C-M-f"
   :after "lightness of| being")
 
 (dumbparens-test forward-out-of-list
   "You can use C-M-f to move out of a list"
-  :mode elisp
   :before "(lightness of| ) being"
   :keys "C-M-f"
   :after "(lightness of )| being")
 
 (dumbparens-test forward-over-list
   "You can use C-M-f to move over a list"
-  :mode elisp
   :before "unbearable| (lightness of) being"
   :keys "C-M-f"
   :after "unbearable (lightness of)| being")
 
 (dumbparens-test forward-with-prefix-arg
   "You can use C-M-f with a prefix arg to repeat multiple times"
-  :mode elisp
   :before "((fo|o bar) baz quux)"
   :keys "C-u 4 C-M-f"
   :after "((foo bar) baz| quux)")
 
 (dumbparens-test forward-out-of-string
   "Using C-M-f inside a string exits the string"
-  :mode elisp
   :before "\"hello| world\""
   :keys "C-M-f"
   :after "\"hello world\"|")
@@ -306,199 +280,237 @@
 
 (dumbparens-test forward-through-comments
   "C-M-f will skip comments"
-  :mode elisp
   :before "foo| ; comment\n;; another comment\n  bar; lol\nbaz"
   :keys "C-M-f"
   :after "foo ; comment\n;; another comment\n  bar|; lol\nbaz")
 
 (dumbparens-test forward-escapes-comments
   "C-M-f can escape the current comment"
-  :mode elisp
   :before ";; com|ment\nfoo bar"
   :keys "C-M-f"
   :after ";; comment\nfoo| bar")
 
 (dumbparens-test forward-includes-escapes-in-symbols
   "C-M-f counts escape sequences as part of symbols"
-  :mode elisp
   :before "(foo |b\\(ar baz)"
   :keys "C-M-f"
   :after "(foo b\\(ar| baz)")
 
 (dumbparens-test forward-from-within-escape
   "C-M-f works correctly even starting in the middle of an escape sequence"
-  :mode elisp
   :before "(foo b\\|(bar baz)"
   :keys "C-M-f"
   :after "(foo b\\(bar| baz)")
 
 (dumbparens-test forward-skips-expression-prefixes-before-symbols-only
   "C-M-f skips expression prefixes before symbols but not after"
-  :mode elisp
   :before "| ,foo, bar"
   :keys "C-M-f"
   :after " ,foo|, bar")
 
 (dumbparens-test backward-to-beginning-of-symbol
   "You can use C-M-b to move to the beginning of a symbol"
-  :mode elisp
   :before "light|ness"
   :keys "C-M-b"
   :after "|lightness")
 
 (dumbparens-test backward-over-symbol
   "You can use C-M-b to move over a symbol backwards"
-  :mode elisp
   :before "lightness of |being"
   :keys "C-M-b"
   :after "lightness |of being")
 
 (dumbparens-test backward-out-of-list
   "You can use C-M-b to move out of a list backwards"
-  :mode elisp
   :before "lightness ( |of being)"
   :keys "C-M-b"
   :after "lightness |( of being)")
 
 (dumbparens-test backward-with-prefix-arg
   "You can use C-M-b with a prefix arg to repeat multiple times"
-  :mode elisp
   :before "(foo bar (baz qu|ux))"
   :keys "C-u 4 C-M-b"
   :after "(foo |bar (baz quux))")
 
 (dumbparens-test backward-out-of-string
   "Using C-M-b inside a string exits the string"
-  :mode elisp
   :before "\"hello |world\""
   :keys "C-M-b"
   :after "|\"hello world\"")
 
 (dumbparens-test backward-skips-punctuation-after-symbols-only
   "C-M-b skips punctuation after symbols but not before"
-  :mode elisp
   :before "foo(bar,baz,|quux)"
   :keys "C-M-b"
   :after "foo(bar,|baz,quux)")
 
 (dumbparens-test backward-through-comments
   "C-M-b will skip comments"
-  :mode elisp
   :before "foo bar ; baz\n |quux"
   :keys "C-M-b"
   :after "foo |bar ; baz\n quux")
 
 (dumbparens-test backward-escapes-comments
   "C-M-b can escape the current comment"
-  :mode elisp
   :before "foo bar ; ba|z\n quux"
   :keys "C-M-b"
   :after "foo |bar ; baz\n quux")
 
 (dumbparens-test backward-includes-escapes-in-symbols
   "C-M-b counts escape sequences as part of symbols"
-  :mode elisp
   :before "(foo b\\(ar| baz)"
   :keys "C-M-b"
   :after "(foo |b\\(ar baz)")
 
 (dumbparens-test backward-from-within-escape
   "C-M-b works correctly even starting in the middle of an escape sequence"
-  :mode elisp
   :before "(foo b\\|(bar baz)"
   :keys "C-M-b"
   :after "(foo |b\\(bar baz)")
 
 (dumbparens-test backward-over-string
   "You can use C-M-b to move backward over a string"
-  :mode elisp
   :before "hello \"world\" |lol"
   :keys "C-M-b"
   :after "hello |\"world\" lol")
 
 (dumbparens-test forward-with-negative-arg
   "You can use C-M-f to move backwards with a negative prefix arg"
-  :mode elisp
   :before "light|ness"
   :keys "C-u -1 C-M-f"
   :after "|lightness")
 
 (dumbparens-test backward-with-negative-arg
   "You can use C-M-b to move forward with a negative prefix arg"
-  :mode elisp
   :before "light|ness"
   :keys "C-u -1 C-M-b"
   :after "lightness|")
 
 (dumbparens-test up-forward-from-list
   "You can use C-M-n to move to the end of a list"
-  :mode elisp
   :before "(foo (ba|r baz) quux)"
   :keys "C-M-n"
   :after "(foo (bar baz)| quux)")
 
 (dumbparens-test up-forward-outside-list
   "Using C-M-n outside a list moves to the end of the buffer"
-  :mode elisp
   :before "foo| (bar baz) quux"
   :keys "C-M-n"
   :after "foo (bar baz) quux| [End of buffer]")
 
 (dumbparens-test up-forward-from-string
   "You can use C-M-n to move to the end of a string"
-  :mode elisp
   :before "hello \"w (o|r) ld\" lol"
   :keys "C-M-n"
   :after "hello \"w (or) ld\"| lol")
 
 (dumbparens-test up-forward-from-within-escape-sequence
   "C-M-n works correctly even within an escape sequence"
-  :mode elisp
   :before "(foo bar\\|(baz) quux)"
   :keys "C-M-n"
   :after "(foo bar\\(baz)| quux)")
 
 (dumbparens-test up-forward-from-comment
   "C-M-n ignores stuff in comments"
-  :mode elisp
   :before "(foo ; bar (baz| quux)\nlol) qat"
   :keys "C-M-n"
   :after "(foo ; bar (baz quux)\nlol)| qat")
 
 (dumbparens-test up-backward-from-list
   "You can use C-M-u to move to the beginning of a list"
-  :mode elisp
   :before "(foo (ba|r baz) quux)"
   :keys "C-M-u"
   :after "(foo |(bar baz) quux)")
 
 (dumbparens-test up-backward-outside-list
   "Using C-M-u outside a list moves to the end of the buffer"
-  :mode elisp
   :before "foo (bar baz) |quux"
   :keys "C-M-u"
   :after "|foo (bar baz) quux [Beginning of buffer]")
 
 (dumbparens-test up-backward-from-string
   "You can use C-M-u to move to the beginning of a string"
-  :mode elisp
   :before "hello \"w (o|r) ld\" lol"
   :keys "C-M-u"
   :after "hello |\"w (or) ld\" lol")
 
 (dumbparens-test up-backward-from-within-escape-sequence
   "C-M-u works correctly even within an escape sequence"
-  :mode elisp
   :before "(foo bar\\|(baz) quux)"
   :keys "C-M-u"
   :after "|(foo bar\\(baz) quux)")
 
 (dumbparens-test up-backward-from-comment
   "C-M-u ignores stuff in comments"
-  :mode elisp
   :before "(foo ; bar (baz| quux)\nlol) qat"
   :keys "C-M-u"
   :after "|(foo ; bar (baz quux)\nlol) qat")
+
+(dumbparens-test kill-from-bol
+  "C-k kills to the end of the current line"
+  :before "foo\n|bar\nbaz\n"
+  :keys "C-k"
+  :after "foo\n|\nbaz\n")
+
+(dumbparens-test kill-empty-line
+  "C-k kills an empty line"
+  :before "foo\n|\nbaz\n"
+  :keys "C-k"
+  :after "foo\n|baz\n")
+
+(dumbparens-test kill-inside-list
+  "C-k kills only to end of list"
+  :before "foo (bar| baz) quux"
+  :keys "C-k"
+  :after "foo (bar|) quux")
+
+(dumbparens-test kill-inside-list-backwards
+  "C-k backwards kills only to beginning of list"
+  :before "foo (bar| baz) quux"
+  :keys "C-u 0 C-k"
+  :after "foo (| baz) quux")
+
+(dumbparens-test kill-entire-line
+  "C-k includes the trailing newline with a prefix arg"
+  :before "foo\n|bar\nbaz\n"
+  :keys "C-u 1 C-k"
+  :after "foo\n|baz\n")
+
+(dumbparens-test kill-two-lines
+  "C-k kills multiple lines with a prefix arg"
+  :before "foo\n|bar\nbaz\nquux\n"
+  :keys "C-u 2 C-k"
+  :after "foo\n|quux\n")
+
+(dumbparens-test kill-two-lines-backwards
+  "C-k kills multiple lines backward with a negative prefix arg"
+  :before "foo\nbar\nbaz\n|quux\n"
+  :keys "C-u -2 C-k"
+  :after "foo\n|quux\n")
+
+(dumbparens-test kill-inside-string
+  "C-k kills only to end of string"
+  :before "foo \"bar| baz\" quux"
+  :keys "C-k"
+  :after "foo \"bar|\" quux")
+
+(dumbparens-test kill-to-end-of-buffer
+  "C-k can kill to end of buffer with no error"
+  :before "foo| bar"
+  :keys "C-k"
+  :after "foo|")
+
+(dumbparens-test kill-to-end-of-buffer-with-prefix-arg
+  "C-k with prefix arg can kill to end of buffer with no error"
+  :before "foo| bar"
+  :keys "C-u 4 C-k"
+  :after "foo|")
+
+(dumbparens-test kill-inside-escape
+  "C-k handles escape sequences correctly"
+  :before "(foo bar\\|(baz quux)"
+  :keys "C-k"
+  :after "(foo bar|)")
 
 (provide 'dumbparens-test)
 
