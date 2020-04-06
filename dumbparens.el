@@ -21,6 +21,21 @@
 ;; variable declarations in each section, run M-x occur with the
 ;; following query: ^;;;;* \|^(
 
+;; Required reading for developing this package:
+;; https://www.gnu.org/software/emacs/manual/html_node/elisp/Syntax-Class-Table.html
+;; https://www.gnu.org/software/emacs/manual/html_node/elisp/Syntax-Table-Internals.html
+;; the docstring for `parse-partial-sexp'
+;;
+;; Yes, the code is hard to read. But the logic is simple and we have
+;; a lot of unit tests. The only things that make it hard are the
+;; large number of cases and the fact that we have to use a lot of
+;; arbitrary constants that you look up in tables (internal and
+;; external syntax descriptors, indices into `syntax-ppss' return
+;; values). On the plus side, once the code is written, it largely
+;; does not need maintenance, because the syntax table is where the
+;; buck stops: no endless series of weirder and weirder special cases
+;; added by request, like in Smartparens.
+
 (require 'cl-lib)
 (require 'map)
 (require 'subr-x)
@@ -73,8 +88,6 @@ For SYNTAX see `skip-syntax-forward'."
 (defun dumbparens--post-self-insert-command ()
   "Insert or remove paired delimiters as necessary.
 For use on `post-self-insert-hook'."
-  ;; https://www.gnu.org/software/emacs/manual/html_node/elisp/Syntax-Class-Table.html
-  ;; https://www.gnu.org/software/emacs/manual/html_node/elisp/Syntax-Table-Internals.html
   (atomic-change-group
     (let ((arg (prefix-numeric-value current-prefix-arg))
           (inserted (char-before)))
