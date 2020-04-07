@@ -412,7 +412,7 @@ With negative N, call `dumbparens-up-forward' instead."
 If killing an open paren, kill all the way to the close paren as
 well. With argument N, kill that many lines in either direction,
 as in `kill-line'. Without argument, don't kill the trailing
-newline unless point is at end-of-line already."
+newline unless point is at the end of the line already."
   (interactive "P")
   (let* ((arg-given n)
          (n (or (prefix-numeric-value n) 1))
