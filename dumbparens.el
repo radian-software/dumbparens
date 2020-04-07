@@ -179,6 +179,17 @@ advice."
 
 ;; Motion commands
 
+(defun dumbparens--end-of-comment ()
+  "Move to end of current comment if inside one."
+  (let ((state (syntax-ppss)))
+    (when (nth 4 state)
+      (goto-char (nth 8 state))
+      (dumbparens--skip-syntax-forward
+       (if (eq (car (syntax-after (point))) 11)
+           "^>"
+         "^!"))
+      (forward-char))))
+
 (defun dumbparens--skip-whitespace-and-comments-forward
     (&optional include-punctuation)
   "Move forward over whitespace and comments from point.
@@ -193,12 +204,7 @@ punctuation and expression prefixes."
           (cl-return))
          ;; If inside a comment, move out of it.
          ((nth 4 state)
-          (goto-char (nth 8 state))
-          (dumbparens--skip-syntax-forward
-           (if (eq (car (syntax-after (point))) 11)
-               "^>"
-             "^!"))
-          (forward-char))
+          (dumbparens--end-of-comment))
          ;; Skip over whitespace, comment starters and enders (the
          ;; latter in case of empty comments), and possibly also
          ;; punctuation.
@@ -272,6 +278,17 @@ punctuation and expression prefixes."
             (beginning-of-buffer (cl-return)))
         (cl-return)))))
 
+(defun dumbparens--end-of-symbol ()
+  "Move to end of current symbol if currently inside or at start of one."
+  (cl-block nil
+    (while t
+      (skip-syntax-forward "w_")
+      (if (memq (car (syntax-after (point))) '(9 10))
+          (condition-case _
+              (forward-char 2)
+            (end-of-buffer (cl-return)))
+        (cl-return)))))
+
 (defun dumbparens-forward (&optional n)
   "Move to end of current or next form. With argument, repeat N times.
 If at end of enclosing form, call `dumbparens-up-forward'
@@ -307,14 +324,7 @@ instead. With negative N, call `dumbparens-backward' instead."
             (dumbparens--up-string-forward))
            ;; Otherwise, move over one symbol.
            (t
-            (cl-block nil
-              (while t
-                (skip-syntax-forward "w_")
-                (if (memq (car (syntax-after (point))) '(9 10))
-                    (condition-case _
-                        (forward-char 2)
-                      (end-of-buffer (cl-return)))
-                  (cl-return)))))))))))
+            (dumbparens--end-of-symbol))))))))
 
 (defun dumbparens-backward (&optional n)
   "Move to start of current or previous form. With argument, repeat N times.
