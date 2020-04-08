@@ -136,46 +136,49 @@ For use on `post-self-insert-hook'."
 For use as `:around' advice on `delete-forward-char' and
 `delete-backward-char'. FUNC and ARGS are as in any `:around'
 advice."
-  (cl-letf*
-      (((symbol-function #'delete-char)
-        (lambda (n &optional killflag)
-          (let ((num-matched 0)
-                (lhs-point (1- (point)))
-                (rhs-point (point))
-                (start (point))
-                (end (point)))
-            (cl-block nil
-              (dotimes (_ (abs n))
-                (let ((state (save-excursion (syntax-ppss lhs-point))))
-                  (unless (and (null (nth 5 state))
-                               (pcase (car (syntax-after lhs-point))
-                                 (`4 (and (null (nth 8 state))
-                                          (eq (char-after rhs-point)
-                                              (cdr (syntax-after lhs-point)))))
-                                 (`7 (and (null (nth 8 state))
-                                          (eq (char-after rhs-point)
-                                              (char-after lhs-point))))
-                                 (`8 (and (null (nth 8 state))
-                                          (eq (char-after rhs-point)
-                                              (char-after lhs-point))))
-                                 (`15 (and (null (nth 8 state))
-                                           (eq 15 (car (syntax-after
-                                                        rhs-point)))))))
-                    (cl-return))
-                  (cl-incf num-matched)
-                  (cl-decf lhs-point)
-                  (cl-incf rhs-point))))
-            (cond
-             ((> n 0)
-              (cl-incf end n)
-              (cl-decf start num-matched))
-             ((< n 0)
-              (cl-decf start (- n))
-              (cl-incf end num-matched)))
-            (when killflag
-              (kill-new (buffer-substring start end)))
-            (delete-region start end)))))
-    (apply func args)))
+  (if (null dumbparens-mode)
+      (apply func args)
+    (cl-letf*
+        (((symbol-function #'delete-char)
+          (lambda (n &optional killflag)
+            (let ((num-matched 0)
+                  (lhs-point (1- (point)))
+                  (rhs-point (point))
+                  (start (point))
+                  (end (point)))
+              (cl-block nil
+                (dotimes (_ (abs n))
+                  (let ((state (save-excursion (syntax-ppss lhs-point))))
+                    (unless
+                        (and (null (nth 5 state))
+                             (pcase (car (syntax-after lhs-point))
+                               (`4 (and (null (nth 8 state))
+                                        (eq (char-after rhs-point)
+                                            (cdr (syntax-after lhs-point)))))
+                               (`7 (and (null (nth 8 state))
+                                        (eq (char-after rhs-point)
+                                            (char-after lhs-point))))
+                               (`8 (and (null (nth 8 state))
+                                        (eq (char-after rhs-point)
+                                            (char-after lhs-point))))
+                               (`15 (and (null (nth 8 state))
+                                         (eq 15 (car (syntax-after
+                                                      rhs-point)))))))
+                      (cl-return))
+                    (cl-incf num-matched)
+                    (cl-decf lhs-point)
+                    (cl-incf rhs-point))))
+              (cond
+               ((> n 0)
+                (cl-incf end n)
+                (cl-decf start num-matched))
+               ((< n 0)
+                (cl-decf start (- n))
+                (cl-incf end num-matched)))
+              (when killflag
+                (kill-new (buffer-substring start end)))
+              (delete-region start end)))))
+      (apply func args))))
 
 ;; Motion commands
 
