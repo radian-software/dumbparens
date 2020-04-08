@@ -40,6 +40,8 @@
 (require 'map)
 (require 'subr-x)
 
+(defvar dumbparens-mode)
+
 (defgroup dumbparens nil
   "Finally, reasonable parenthesis-matching for Emacs"
   :group 'convenience
