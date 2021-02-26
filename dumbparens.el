@@ -55,10 +55,14 @@
     ("C-M-n"     . dumbparens-up-forward)
     ("C-M-u"     . dumbparens-up-backward)
     ("C-k"       . dumbparens-kill-line)
-    ("C-("       . dumbparens-wrap)
-    ("M-("       . dumbparens-wrap-round)
-    ("M-["       . dumbparens-wrap-square)
-    ("C-{"       . dumbparens-wrap-curly)
+    ("C-("       . dumbparens-wrap-forward)
+    ("C-)"       . dumbparens-wrap-backward)
+    ("M-("       . dumbparens-wrap-round-forward)
+    ("M-)"       . dumbparens-wrap-round-backward)
+    ("M-["       . dumbparens-wrap-square-forward)
+    ("M-]"       . dumbparens-wrap-square-backward)
+    ("C-{"       . dumbparens-wrap-curly-forward)
+    ("C-}"       . dumbparens-wrap-curly-backward)
     ("M-\""      . dumbparens-wrap-double-quote)
     ("M-'"       . dumbparens-wrap-single-quote)
     ("M-s"       . dumbparens-splice)
@@ -476,53 +480,175 @@ newline unless point is at the end of the line already."
 
 ;; Depth-changing commands
 
-(defun dumbparens-wrap (char &optional n)
+(defun dumbparens-wrap-forward (char &optional n)
   "Wrap following form in paren CHAR and its matched pair.
 With argument N, wrap that many forms. With negative N, wrap
-preceding form(s)."
-  (interactive "c\np")
-  (setq n (or n 1))
-  (ignore char))
+preceding form(s). With \\[universal-argument], replace enclosing
+parens instead of inserting new ones. With multiple
+\\[universal-argument]'s, go up that many levels before
+replacing."
+  (interactive "c\nP")
+  (cl-block nil
+    (cl-letf* ((replace (listp n))
+               (n (if replace
+                      (/ (logb (car n)) 2)
+                    (prefix-numeric-value n)))
+               (type (pcase (char-syntax char)
+                       (`?\( 'paren)
+                       (`?\" 'string)
+                       (`?$ 'delim)
+                       (`?| 'generic-string)
+                       (_ (user-error
+                           "Character %c is not a paren in %S"
+                           char major-mode))))
+               (closer (or (matching-paren char) char))
+               (state (syntax-ppss)))
+      (cond
+       ;; If in string, move to its beginning or end.
+       ((nth 3 state)
+        (if (>= n 0)
+            (goto-char (nth 8 state))
+          (dumbparens--up-string-forward)))
+       ;; If in comment, move to its beginning or end.
+       ((nth 4 state)
+        (if (>= n 0)
+            (condition-case _
+                (dumbparens--end-of-comment)
+              (end-of-buffer (cl-return)))
+          (goto-char (nth 8 state))))
+       ;; Otherwise, move to beginning or end of current symbol (if
+       ;; any).
+       (t
+        (if (>= n 0)
+            (dumbparens--beginning-of-symbol)
+          (dumbparens--end-of-symbol))))
+      ;; wrapping with PARENS: no need to mess with anything
+      ;;
+      ;; wrapping with STRING: kill all the strings and generic
+      ;; strings first, escape string quotes of the type being added,
+      ;; stop at comment
+      ;;
+      ;; wrapping with DELIMS: kill all the paired delimiters of the
+      ;; type being added first
+      ;;
+      ;; wrapping with GENERIC STRING: kill all the strings and
+      ;; generic strings first, escape generic string quotes, stop at
+      ;; comment
+      )))
 
-(defun dumbparens-wrap-round (&optional n)
+(defun dumbparens-wrap-backward (char &optional n)
+  "Wrap preceding form in paren CHAR and its matched pair.
+With argument N, wrap that many forms. With negative N, wrap
+following form(s). With \\[universal-argument], replace enclosing
+parens instead of inserting new ones. With multiple
+\\[universal-argument]'s, go up that many levels before
+replacing."
+  (interactive "P")
+  (dumbparens-wrap-forward
+   char
+   (if (listp n)
+       n
+     (- (prefix-numeric-value n)))))
+
+(defun dumbparens-wrap-round-forward (&optional n)
   "Wrap following form in pair of round parens.
 With argument N, wrap that many forms. With negative N, wrap
-preceding form(s)."
+preceding form(s). With \\[universal-argument], replace enclosing
+parens instead of inserting new ones. With multiple
+\\[universal-argument]'s, go up that many levels before
+replacing."
   (interactive "p")
-  (setq n (or n 1))
-  (dumbparens-wrap ?\( n))
+  (dumbparens-wrap-forward ?\( n))
 
-(defun dumbparens-wrap-square (&optional n)
+(defun dumbparens-wrap-round-backward (&optional n)
+  "Wrap preceding form in pair of round parens.
+With argument N, wrap that many forms. With negative N, wrap
+following form(s). With \\[universal-argument], replace enclosing
+parens instead of inserting new ones. With multiple
+\\[universal-argument]'s, go up that many levels before
+replacing."
+  (interactive "p")
+  (dumbparens-wrap-backward ?\( n))
+
+(defun dumbparens-wrap-square-forward (&optional n)
   "Wrap following form in pair of square brackets.
 With argument N, wrap that many forms. With negative N, wrap
-preceding form(s)."
+preceding form(s). With \\[universal-argument], replace enclosing
+parens instead of inserting new ones. With multiple
+\\[universal-argument]'s, go up that many levels before
+replacing."
   (interactive "p")
-  (setq n (or n 1))
-  (dumbparens-wrap ?\[ n))
+  (dumbparens-wrap-forward ?\[ n))
 
-(defun dumbparens-wrap-curly (&optional n)
+(defun dumbparens-wrap-square-backward (&optional n)
+  "Wrap preceding form in pair of square brackets.
+With argument N, wrap that many forms. With negative N, wrap
+following form(s). With \\[universal-argument], replace enclosing
+parens instead of inserting new ones. With multiple
+\\[universal-argument]'s, go up that many levels before
+replacing."
+  (interactive "p")
+  (dumbparens-wrap-backward ?\[ n))
+
+(defun dumbparens-wrap-curly-forward (&optional n)
   "Wrap following form in pair of curly braces.
 With argument N, wrap that many forms. With negative N, wrap
-preceding form(s)."
+preceding form(s). With \\[universal-argument], replace enclosing
+parens instead of inserting new ones. With multiple
+\\[universal-argument]'s, go up that many levels before
+replacing."
   (interactive "p")
-  (setq n (or n 1))
-  (dumbparens-wrap ?{ n))
+  (dumbparens-wrap-forward ?{ n))
 
-(defun dumbparens-wrap-double-quote (&optional n)
+(defun dumbparens-wrap-curly-backward (&optional n)
+  "Wrap preceding form in pair of curly braces.
+With argument N, wrap that many forms. With negative N, wrap
+following form(s). With \\[universal-argument], replace enclosing
+parens instead of inserting new ones. With multiple
+\\[universal-argument]'s, go up that many levels before
+replacing."
+  (interactive "p")
+  (dumbparens-wrap-backward ?{ n))
+
+(defun dumbparens-wrap-double-quote-forward (&optional n)
   "Wrap following form in pair of double quotes.
 With argument N, wrap that many forms. With negative N, wrap
-preceding form(s)."
+preceding form(s). With \\[universal-argument], replace enclosing
+parens instead of inserting new ones. With multiple
+\\[universal-argument]'s, go up that many levels before
+replacing."
   (interactive "p")
-  (setq n (or n 1))
-  (dumbparens-wrap ?\" n))
+  (dumbparens-wrap-forward ?\" n))
 
-(defun dumbparens-wrap-single-quote (&optional n)
+(defun dumbparens-wrap-double-quote-backward (&optional n)
+  "Wrap preceding form in pair of double quotes.
+With argument N, wrap that many forms. With negative N, wrap
+following form(s). With \\[universal-argument], replace enclosing
+parens instead of inserting new ones. With multiple
+\\[universal-argument]'s, go up that many levels before
+replacing."
+  (interactive "p")
+  (dumbparens-wrap-backward ?\" n))
+
+(defun dumbparens-wrap-single-quote-forward (&optional n)
   "Wrap following form in pair of single quotes.
 With argument N, wrap that many forms. With negative N, wrap
-preceding form(s)."
+preceding form(s). With \\[universal-argument], replace enclosing
+parens instead of inserting new ones. With multiple
+\\[universal-argument]'s, go up that many levels before
+replacing."
   (interactive "p")
-  (setq n (or n 1))
-  (dumbparens-wrap ?\' n))
+  (dumbparens-wrap-forward ?\' n))
+
+(defun dumbparens-wrap-single-quote-backward (&optional n)
+  "Wrap preceding form in pair of single quotes.
+With argument N, wrap that many forms. With negative N, wrap
+following form(s). With \\[universal-argument], replace enclosing
+parens instead of inserting new ones. With multiple
+\\[universal-argument]'s, go up that many levels before
+replacing."
+  (interactive "p")
+  (dumbparens-wrap-backward ?\' n))
 
 (defun dumbparens-splice (&optional n)
   "Remove parens of enclosing form. With argument, repeat N times.
@@ -637,7 +763,6 @@ See `dumbparens-mode-bindings'.")
 
 ;; Local Variables:
 ;; indent-tabs-mode: nil
-;; outline-regexp: ";;;;* "
 ;; sentence-end-double-space: nil
 ;; End:
 
