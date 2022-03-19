@@ -43,7 +43,7 @@
 (defvar dumbparens-mode)
 
 (defgroup dumbparens nil
-  "Finally, reasonable parenthesis-matching for Emacs"
+  "Finally, reasonable parenthesis-matching for Emacs."
   :group 'convenience
   :prefix "dumbparens-"
   :link '(url-link "https://github.com/raxod502/dumbparens"))
@@ -534,7 +534,7 @@ replacing."
       ;; wrapping with GENERIC STRING: kill all the strings and
       ;; generic strings first, escape generic string quotes, stop at
       ;; comment
-      )))
+      (ignore type closer))))
 
 (defun dumbparens-wrap-backward (char &optional n)
   "Wrap preceding form in paren CHAR and its matched pair.

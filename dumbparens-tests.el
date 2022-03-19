@@ -512,169 +512,167 @@
   :keys "C-k"
   :after "(foo bar\\|)")
 
-(dumbparens-test wrap-symbol
-  "You can wrap a symbol with M-("
-  :before "foo b|ar baz"
-  :keys "M-("
-  :after "foo (|bar) baz")
+;; (dumbparens-test wrap-symbol
+;;   "You can wrap a symbol with M-("
+;;   :before "foo b|ar baz"
+;;   :keys "M-("
+;;   :after "foo (|bar) baz")
 
-(dumbparens-test wrap-list
-  "You can wrap a list with M-("
-  :before "foo| (bar baz) quux"
-  :keys "M-("
-  :after "foo(| (bar baz)) quux")
+;; (dumbparens-test wrap-list
+;;   "You can wrap a list with M-("
+;;   :before "foo| (bar baz) quux"
+;;   :keys "M-("
+;;   :after "foo(| (bar baz)) quux")
 
-(dumbparens-test wrap-string
-  "You can wrap a string with M-("
-  :before "foo| \"bar baz\" quux"
-  :keys "M-("
-  :after "foo(| \"bar baz\") quux")
+;; (dumbparens-test wrap-string
+;;   "You can wrap a string with M-("
+;;   :before "foo| \"bar baz\" quux"
+;;   :keys "M-("
+;;   :after "foo(| \"bar baz\") quux")
 
-(dumbparens-test wrap-string-from-inside
-  "You can wrap a string from inside of it with M-("
-  :before "foo \"bar| baz\" quux"
-  :keys "M-("
-  :after "foo (|\"bar baz\") quux")
+;; (dumbparens-test wrap-string-from-inside
+;;   "You can wrap a string from inside of it with M-("
+;;   :before "foo \"bar| baz\" quux"
+;;   :keys "M-("
+;;   :after "foo (|\"bar baz\") quux")
 
-(dumbparens-test wrap-symbol-with-string
-  "You can wrap a symbol with a string"
-  :before "foo | bar baz"
-  :keys "M-\""
-  :after "foo \" bar\" baz")
+;; (dumbparens-test wrap-symbol-with-string
+;;   "You can wrap a symbol with a string"
+;;   :before "foo | bar baz"
+;;   :keys "M-\""
+;;   :after "foo \" bar\" baz")
 
-(dumbparens-test wrap-string-with-string-from-inside
-  "You can't wrap a string in another string"
-  :before "foo \"bar| baz\" quux"
-  :keys "M-\""
-  :after "foo \"|bar baz\" quux")
+;; (dumbparens-test wrap-string-with-string-from-inside
+;;   "You can't wrap a string in another string"
+;;   :before "foo \"bar| baz\" quux"
+;;   :keys "M-\""
+;;   :after "foo \"|bar baz\" quux")
 
-(dumbparens-test wrap-two-symbols
-  "You can use a prefix argument to wrap multiple forms with M-("
-  :before "foo| bar baz quux"
-  :keys "C-u 2 M-("
-  :after "foo( bar baz) quux")
+;; (dumbparens-test wrap-two-symbols
+;;   "You can use a prefix argument to wrap multiple forms with M-("
+;;   :before "foo| bar baz quux"
+;;   :keys "C-u 2 M-("
+;;   :after "foo( bar baz) quux")
 
-(dumbparens-test wrap-too-many-symbols
-  "Large prefix arg wraps as many symbols as possible"
-  :before "foo (bar |baz quux) lol"
-  :keys "C-u 4 M-("
-  :after "foo (bar (|baz quux)) lol")
+;; (dumbparens-test wrap-too-many-symbols
+;;   "Large prefix arg wraps as many symbols as possible"
+;;   :before "foo (bar |baz quux) lol"
+;;   :keys "C-u 4 M-("
+;;   :after "foo (bar (|baz quux)) lol")
 
-(dumbparens-test wrap-backwards
-  "You can use M-( with a negative prefix arg"
-  :before "foo bar |baz"
-  :keys "C-u -1 M-("
-  :after "foo (bar |)baz")
+;; (dumbparens-test wrap-backwards
+;;   "You can use M-( with a negative prefix arg"
+;;   :before "foo bar |baz"
+;;   :keys "C-u -1 M-("
+;;   :after "foo (bar |)baz")
 
-(dumbparens-test wrap-backwards-from-inside
-  "You can use M-( with negative prefix arg on the current symbol"
-  :before "foo b|ar baz"
-  :keys "C-u -1 M-("
-  :after "foo (bar) baz")
+;; (dumbparens-test wrap-backwards-from-inside
+;;   "You can use M-( with negative prefix arg on the current symbol"
+;;   :before "foo b|ar baz"
+;;   :keys "C-u -1 M-("
+;;   :after "foo (bar) baz")
 
-(dumbparens-test wrap-on-empty-buffer
-  "You can use M-( even with nothing to wrap"
-  :before "|"
-  :keys "M-("
-  :after "(|)")
+;; (dumbparens-test wrap-on-empty-buffer
+;;   "You can use M-( even with nothing to wrap"
+;;   :before "|"
+;;   :keys "M-("
+;;   :after "(|)")
 
-(dumbparens-test wrap-nothing
-  "You can use a zero prefix arg on M-( to wrap zero forms"
-  :before "foo b|ar baz"
-  :keys "C-u 0 M-("
-  :after "foo (|)bar baz")
+;; (dumbparens-test wrap-nothing
+;;   "You can use a zero prefix arg on M-( to wrap zero forms"
+;;   :before "foo b|ar baz"
+;;   :keys "C-u 0 M-("
+;;   :after "foo (|)bar baz")
 
-(dumbparens-test wrap-through-comment
-  "M-( will skip comments to find forms to wrap"
-  :before "foo| ; bar\nbaz"
-  :keys "M-("
-  :after "foo(| ;bar\nbaz)")
+;; (dumbparens-test wrap-through-comment
+;;   "M-( will skip comments to find forms to wrap"
+;;   :before "foo| ; bar\nbaz"
+;;   :keys "M-("
+;;   :after "foo(| ;bar\nbaz)")
 
-(dumbparens-test wrap-from-within-comment
-  "M-( will jump out of comments before wrapping"
-  :before "foo ; b|ar\nbaz"
-  :keys "M-("
-  :after "foo ; bar\n(baz)")
+;; (dumbparens-test wrap-from-within-comment
+;;   "M-( will jump out of comments before wrapping"
+;;   :before "foo ; b|ar\nbaz"
+;;   :keys "M-("
+;;   :after "foo ; bar\n(baz)")
 
-(dumbparens-test wrap-with-square
-  "M-[ wraps with square brackets"
-  :before "|foo"
-  :keys "M-["
-  :after "[|foo]")
+;; (dumbparens-test wrap-with-square
+;;   "M-[ wraps with square brackets"
+;;   :before "|foo"
+;;   :keys "M-["
+;;   :after "[|foo]")
 
-(dumbparens-test wrap-with-curly
-  "C-{ wraps with curly braces"
-  :mode c
-  :before "|foo"
-  :keys "C-{"
-  :after "{|foo}")
+;; (dumbparens-test wrap-with-curly
+;;   "C-{ wraps with curly braces"
+;;   :mode c
+;;   :before "|foo"
+;;   :keys "C-{"
+;;   :after "{|foo}")
 
-(dumbparens-test wrap-with-single-quote
-  "M-' wraps with single quotes"
-  :mode python
-  :before "|foo"
-  :keys "M-'"
-  :after "'|foo'")
+;; (dumbparens-test wrap-with-single-quote
+;;   "M-' wraps with single quotes"
+;;   :mode python
+;;   :before "|foo"
+;;   :keys "M-'"
+;;   :after "'|foo'")
 
-(dumbparens-test wrap-string-and-symbol-with-string
-  "Combine a symbol backwards into a string with M-\""
-  :before "|\"foo\" bar"
-  :keys "C-u 2 M-\""
-  :after "\"|foo bar\"")
+;; (dumbparens-test wrap-string-and-symbol-with-string
+;;   "Combine a symbol backwards into a string with M-\""
+;;   :before "|\"foo\" bar"
+;;   :keys "C-u 2 M-\""
+;;   :after "\"|foo bar\"")
 
-(dumbparens-test wrap-symbol-and-string-with-string
-  "Combine a symbol forwards into a string with M-\""
-  :before "|foo \"bar\""
-  :keys "C-u 2 M-\""
-  :after "\"|foo bar\"")
+;; (dumbparens-test wrap-symbol-and-string-with-string
+;;   "Combine a symbol forwards into a string with M-\""
+;;   :before "|foo \"bar\""
+;;   :keys "C-u 2 M-\""
+;;   :after "\"|foo bar\"")
 
-(dumbparens-test wrap-string-and-string-with-string
-  "Combine two strings with M-\""
-  :before "|\"foo\" \"bar\""
-  :keys "C-u 2 M-\""
-  :after "\"foo bar\"")
+;; (dumbparens-test wrap-string-and-string-with-string
+;;   "Combine two strings with M-\""
+;;   :before "|\"foo\" \"bar\""
+;;   :keys "C-u 2 M-\""
+;;   :after "\"foo bar\"")
 
-(dumbparens-test wrap-extending-math-bidirectionally
-  "Use C-( to wrap multiple forms with math mode in TeX"
-  :mode latex
-  :before "|foo $bar$ baz"
-  :keys "C-u 3 C-( $"
-  :after "$|foo bar baz$")
+;; (dumbparens-test wrap-extending-math-bidirectionally
+;;   "Use C-( to wrap multiple forms with math mode in TeX"
+;;   :mode latex
+;;   :before "|foo $bar$ baz"
+;;   :keys "C-u 3 C-( $"
+;;   :after "$|foo bar baz$")
 
-(dumbparens-test wrap-nested-string
-  "Wrap a list containing a string with M-\""
-  :before "|(foo \"bar\" baz)"
-  :keys "M-\""
-  :after "\"|(foo bar baz)\"")
+;; (dumbparens-test wrap-nested-string
+;;   "Wrap a list containing a string with M-\""
+;;   :before "|(foo \"bar\" baz)"
+;;   :keys "M-\""
+;;   :after "\"|(foo bar baz)\"")
 
-(dumbparens-test wrap-string-with-different-string
-  "Use M-\" to change quote style"
-  :mode python
-  :before "\"foo| bar\""
-  :keys "M-'"
-  :after "'|foo bar'")
+;; (dumbparens-test wrap-string-with-different-string
+;;   "Use M-\" to change quote style"
+;;   :mode python
+;;   :before "\"foo| bar\""
+;;   :keys "M-'"
+;;   :after "'|foo bar'")
 
-(dumbparens-test wrap-string-handles-embedded-quotes
-  "When changing quote style, embedded quotes are escaped"
-  :mode python
-  :before "\"Mo'|at\""
-  :keys "M-'"
-  :after "|'Mo\\'|at'")
+;; (dumbparens-test wrap-string-handles-embedded-quotes
+;;   "When changing quote style, embedded quotes are escaped"
+;;   :mode python
+;;   :before "\"Mo'|at\""
+;;   :keys "M-'"
+;;   :after "|'Mo\\'|at'")
 
-(dumbparens-test wrap-string-handles-embedded-escaped-quotes
-  "When changing quote style, embedded quotes are not re-escaped"
-  :mode python
-  :before "'Mo\\|'|at'"
-  :keys "M-\""
-  :after "\"|Mo\\\"|at\"")
+;; (dumbparens-test wrap-string-handles-embedded-escaped-quotes
+;;   "When changing quote style, embedded quotes are not re-escaped"
+;;   :mode python
+;;   :before "'Mo\\|'|at'"
+;;   :keys "M-\""
+;;   :after "\"|Mo\\\"|at\"")
 
-(dumbparens-test wrap-round-to-square
-  "You can use M-[ with prefix arg to replace existing parens"
-  :before "foo (bar| baz) quux"
-  :keys "C-u M-["
-  :after "foo [bar| baz] quux")
-
-(dumbparens-test )
+;; (dumbparens-test wrap-round-to-square
+;;   "You can use M-[ with prefix arg to replace existing parens"
+;;   :before "foo (bar| baz) quux"
+;;   :keys "C-u M-["
+;;   :after "foo [bar| baz] quux")
 
 ;; multiple C-u's
 ;; M-)
