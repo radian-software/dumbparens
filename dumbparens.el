@@ -1,17 +1,17 @@
 ;;; dumbparens.el --- Simple paren-matching solution -*- lexical-binding: t -*-
 
-;; Copyright (C) 2019 Radon Rosborough
+;; Copyright (C) 2019-2022 Radian LLC and contributors
 
-;; Author: Radon Rosborough <radon.neon@gmail.com>
+;; Author: Radian LLC <contact+dumbparens@radian.codes>
 ;; Created: 12 Dec 2019
-;; Homepage: https://github.com/raxod502/dumbparens
+;; Homepage: https://github.com/radian-software/dumbparens
 ;; Keywords: extensions
 ;; Package-Requires: ((emacs "25.1"))
 ;; Version: 0
 
 ;;; Commentary:
 
-;; Please see https://github.com/raxod502/dumbparens for more
+;; Please see https://github.com/radian-software/dumbparens for more
 ;; information.
 
 ;;; Code:
@@ -46,7 +46,7 @@
   "Finally, reasonable parenthesis-matching for Emacs."
   :group 'convenience
   :prefix "dumbparens-"
-  :link '(url-link "https://github.com/raxod502/dumbparens"))
+  :link '(url-link "https://github.com/radian-software/dumbparens"))
 
 (defcustom dumbparens-mode-bindings
   '(([remap delete-char]  . delete-forward-char)

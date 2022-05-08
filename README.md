@@ -17,7 +17,7 @@ Usage is as follows. First install with
 [`straight.el`](https://github.com/raxod502/straight.el):
 
     (straight-use-package
-      '(dumbparens :host github :repo "raxod502/dumbparens"))
+      '(dumbparens :host github :repo "radian-software/dumbparens"))
 
 Then type `M-x dumbparens-mode` or `M-x dumbparens-global-mode`.
 
@@ -32,8 +32,7 @@ any unreasonable behavior will result in a slap on the wrist and a new
 regression test.
 
 Note that there are also various linters, which you can run along with
-the unit tests by means of `make lint`.
-[CircleCI](https://circleci.com/gh/raxod502/dumbparens) will
+the unit tests by means of `make lint`. GitHub Actions will
 automatically run this against all supported Emacs versions. You can
 easily test for yourself by using `make docker VERSION=25.1` or
 analogous to use the appropriate version.
